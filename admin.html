@@ -648,24 +648,105 @@ function toggleModal(id) {
       document.getElementById('taskPriority').value = 'low';
       document.getElementById('taskNotes').value = '';
 
-      loadCouriersToSelect();
-    } else if (id === 'addCourierModal') {
-      document.getElementById('courierName').value = '';
-      document.getElementById('courierEmail').value = '';
-      document.getElementById('courierPhone').value = '';
-      document.getElementById('courierPass').value = '';
-    }
-  }
-}
-
+      // ═══════════════════════════════════════════════════════════════
+// 📦 LOAD COURIERS TO SELECT - DENGAN DEBUG ✅
+// ═══════════════════════════════════════════════════════════════
 function loadCouriersToSelect() {
-  const select = document.getElementById('taskCourier');
-  if (!select) return;
-  select.innerHTML = '<option value="">-- Pilih Kurir --</option>' +
-    couriers.map(c => '<option value="' + c.id + '">' + (c.full_name || c.email) + '</option>').join('');
+  var select = document.getElementById('taskCourier');
+  if (!select) {
+    console.error('❌ Select element #taskCourier tidak ditemukan!');
+    return;
+  }
+  
+  console.log('🔄 Loading couriers ke dropdown...', couriers.length, 'kurir ditemukan');
+  console.log('Data couriers:', couriers);
+  
+  if (couriers.length === 0) {
+    console.warn('⚠️ Tidak ada kurir di database!');
+    select.innerHTML = '<option value="">-- Tidak Ada Kurir Tersedia --</option>';
+    
+    // Tampilkan tombol debug
+    setTimeout(function() {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Tidak Ada Kurir',
+        text: 'Belum ada kurir yang terdaftar. Silakan tambah kurir terlebih dahulu.',
+        confirmButtonText: 'Tambah Kurir Sekarang',
+        confirmButtonColor: '#10b981'
+      }).then(function(result) {
+        if (result.isConfirmed) {
+          toggleModal('addCourierModal');
+        }
+      });
+    }, 500);
+    
+    return;
+  }
+  
+  var optionsHtml = '<option value="">-- Pilih Kurir --</option>';
+  
+  couriers.forEach(function(c) {
+    var displayName = c.full_name || c.email || 'Tanpa Nama';
+    optionsHtml += '<option value="' + c.id + '">' + displayName + ' (' + c.email + ')</option>';
+    console.log('  ✅ Ditambahkan:', displayName);
+  });
+  
+  select.innerHTML = optionsHtml;
+  console.log('✅ Dropdown kurir berhasil dimuat');
 }
 
 // ═══════════════════════════════════════════════════════════════
+// 🔍 DEBUG: Test Load Couriers Manual
+// ═══════════════════════════════════════════════════════════════
+async function debugLoadCouriers() {
+  console.log('🔍 Testing load couriers dari database...');
+  
+  try {
+    var response = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'Kurir');
+    
+    if (response.error) {
+      console.error('❌ Error:', response.error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error Load Kurir',
+        text: response.error.message,
+        footer: '<pre>' + JSON.stringify(response.error, null, 2) + '</pre>'
+      });
+    } else {
+      console.log('✅ Berhasil! Ditemukan:', response.data.length, 'kurir');
+      console.log('Data:', response.data);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Kurir Ditemukan',
+        text: response.data.length + ' kurir ditemukan di database',
+        footer: '<pre style="max-height:200px;overflow:auto;font-size:10px;">' + 
+                JSON.stringify(response.data.map(function(c) { 
+                  return {name: c.full_name, email: c.email, role: c.role}; 
+                }), null, 2) + '</pre>'
+      });
+      
+      // Update global variable
+      couriers = response.data;
+      
+      // Refresh dropdown jika modal terbuka
+      if (!document.getElementById('addTaskModal').classList.contains('hide')) {
+        loadCouriersToSelect();
+      }
+    }
+  } catch (error) {
+    console.error('❌ Exception:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Exception',
+      text: error.message
+    });
+  }
+}
+ ═══════════════════════════════════════════════════════════════
 // 📦 TASK FUNCTIONS ✅
 // ═══════════════════════════════════════════════════════════════
 async function saveTask() {
