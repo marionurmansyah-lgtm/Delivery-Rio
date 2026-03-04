@@ -25,36 +25,11 @@
 </head>
 <body class="bg-gray-100 font-sans antialiased">
 
-<!-- ================= AUTH SECTION ================= -->
-<section id="authSection" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-white to-blue-50">
-  <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100 fade-in">
-    <div class="text-center mb-8">
-      <!-- ✅ LOGO CONTAINER -->
-      <div class="w-24 h-24 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 overflow-hidden shadow-inner border border-gray-100">
-        <img id="logoAuth" src="" alt="Logo PT Klase" class="w-full h-full object-contain p-2">
-      </div>
-      <h1 class="text-2xl font-bold text-blue-900">PT Klase Auto Rental</h1>
-      <p class="text-gray-500 text-sm mt-1">Admin Panel</p>
-    </div>
-
-    <!-- Login Form -->
-    <div id="loginForm">
-      <h2 class="text-xl font-semibold mb-6 text-gray-700">Masuk sebagai Admin</h2>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1 uppercase">Email</label>
-          <input type="email" id="loginEmail" placeholder="admin@klase.com" class="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1 uppercase">Password</label>
-          <input type="password" id="loginPass" placeholder="••••••••" class="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
-        </div>
-      </div>
-      <button onclick="handleLogin()" id="btnLogin" class="w-full mt-8 bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition">Masuk</button>
-      <div class="mt-6 text-center">
-        <p class="text-xs text-gray-400">Hubungi supervisor untuk akses admin</p>
-      </div>
-    </div>
+<!-- ================= LOADING SCREEN ================= -->
+<section id="loadingSection" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50">
+  <div class="text-center">
+    <div class="loading-spinner mx-auto mb-4"></div>
+    <p class="text-gray-600 font-medium">Memverifikasi akses Admin...</p>
   </div>
 </section>
 
@@ -64,7 +39,7 @@
     <!-- Sidebar -->
     <aside class="w-64 bg-blue-900 text-white hidden md:flex flex-col no-print">
       <div class="p-6 text-center border-b border-blue-700">
-        <img id="logoSidebar" src="" class="h-16 mx-auto mb-3 rounded-lg bg-white p-2 object-contain">
+        <img id="logoSidebar" src="https://pyaqgicjxfgckzgxsvzz.supabase.co/storage/v1/object/public/DELIVERY_PHOTOS/kar.png" class="h-16 mx-auto mb-3 rounded-lg bg-white p-2 object-contain">
         <h2 class="font-bold text-lg">Admin Panel</h2>
         <p class="text-xs text-blue-300">PT Klase Auto Rental</p>
       </div>
@@ -373,15 +348,21 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// ⚙️ CONFIG - SIMPLE LIKE RW APP ✅ (Pattern yang terbukti sukses)
+// ⚙️ CONFIG - SAME AS INDEX.HTML ✅
 // ═══════════════════════════════════════════════════════════════
 const SB_URL = 'https://pyaqgicjxfgckzgxsvzz.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5YXFnaWNqeGZnY2t6Z3hzdnp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NjEwNjcsImV4cCI6MjA4ODEzNzA2N30.YnOXsN8UAFV9EQikIhTujDPiWjtxiba3co257LFs9w0';
 const LOGO_URL = 'https://pyaqgicjxfgckzgxsvzz.supabase.co/storage/v1/object/public/DELIVERY_PHOTOS/kar.png';
 const BUCKET_NAME = 'DELIVERY_PHOTOS';
 
-// ✅ PENTING: Gunakan _supabase (dengan underscore) untuk menghindari konflik dengan library
 const _supabase = supabase.createClient(SB_URL, SB_KEY);
+
+// 🔐 ADMIN HARDCODED (Sama persis dengan index.html)
+const ADMIN_CRED = {
+  email: 'mariovarlente@gmail.com',
+  password: 'adminklase1',
+  name: 'Admin Supervisor'
+};
 
 let currentUser = null;
 let tasks = [];
@@ -389,54 +370,53 @@ let couriers = [];
 let deliveries = [];
 
 // ═══════════════════════════════════════════════════════════════
-// 🔔 NOTIFY FUNCTION - LIKE RW APP ✅
+// 🔔 NOTIFY FUNCTION
 // ═══════════════════════════════════════════════════════════════
 function notify(msg, icon = 'info') {
   Swal.fire({ icon, title: msg, timer: 2000, showConfirmButton: false });
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 🔐 LOGIN - SIMPLE & DIRECT ✅
+// 🔐 PROTEKSI: Cek apakah user adalah Admin ✅
 // ═══════════════════════════════════════════════════════════════
-async function handleLogin() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPass').value;
-  const btn = document.getElementById('btnLogin');
-
-  if (!email || !password) { notify('Email dan password wajib diisi!', 'warning'); return; }
-
-  btn.disabled = true;
-  btn.innerHTML = '<div class="loading-spinner"></div> Memproses...';
-
-  try {
-    const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-
-    const {  profile } = await _supabase.from('profiles').select('role, full_name').eq('id', data.user.id).single();
-    
-    if (!profile || profile.role !== 'Admin') {
-      throw new Error('Akses ditolak. Hanya Admin yang dapat login.');
-    }
-
-    currentUser = {
-      id: data.user.id,
-      email,
-      name: profile.full_name || email.split('@')[0],
-      role: 'Admin'
-    };
-
-    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+async function checkAdminAccess() {
+  const saved = localStorage.getItem('currentUser');
+  
+  if (!saved) {
+    // Tidak ada session, redirect ke index.html (login gate)
+    window.location.href = 'index.html';
+    return;
+  }
+  
+  currentUser = JSON.parse(saved);
+  
+  // ✅ Cek 1: Jika admin hardcoded
+  if (currentUser.id === 'ADMIN_HARDCODED' && currentUser.role === 'Admin') {
     showAdminPanel();
     await loadData();
-  } catch (error) {
-    notify(error.message, 'error');
-    btn.disabled = false;
-    btn.innerHTML = 'Masuk';
+    return;
   }
+  
+  // ✅ Cek 2: Jika login via Supabase tapi role Admin
+  if (currentUser.role === 'Admin') {
+    const { data } = await _supabase.auth.getSession();
+    if (data?.session) {
+      showAdminPanel();
+      await loadData();
+      return;
+    }
+  }
+  
+  // ❌ Bukan admin, redirect ke index.html
+  notify('Akses ditolak. Hanya Admin yang dapat mengakses halaman ini.', 'error');
+  localStorage.removeItem('currentUser');
+  setTimeout(() => {
+    window.location.href = 'index.html';
+  }, 1500);
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 🚪 LOGOUT - SIMPLE ✅
+// 🚪 LOGOUT ✅
 // ═══════════════════════════════════════════════════════════════
 async function handleLogout() {
   const result = await Swal.fire({
@@ -447,21 +427,20 @@ async function handleLogout() {
     confirmButtonColor: '#ef4444',
     confirmButtonText: 'Ya, Logout'
   });
-
   if (result.isConfirmed) {
     await _supabase.auth.signOut();
     localStorage.removeItem('currentUser');
-    location.reload();
+    window.location.href = 'index.html';
   }
 }
 
 function showAdminPanel() {
-  document.getElementById('authSection').classList.add('hide');
+  document.getElementById('loadingSection').classList.add('hide');
   document.getElementById('adminSection').classList.remove('hide');
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 📊 DATA FUNCTIONS - SIMPLE ✅
+// 📊 DATA FUNCTIONS ✅
 // ═══════════════════════════════════════════════════════════════
 async function loadData() {
   try {
@@ -480,7 +459,7 @@ async function loadData() {
     if (tErr) throw tErr;
     tasks = tasksData || [];
 
-    const {  couriersData, error: cErr } = await _supabase.from('profiles').select('id, email, full_name, phone, created_at').eq('role', 'Kurir');
+    const { data: couriersData, error: cErr } = await _supabase.from('profiles').select('id, email, full_name, phone, created_at').eq('role', 'Kurir');
     if (cErr) throw cErr;
     couriers = couriersData || [];
 
@@ -517,7 +496,7 @@ function updateStats() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 📋 RENDER FUNCTIONS - SIMPLE ✅
+// 📋 RENDER FUNCTIONS ✅
 // ═══════════════════════════════════════════════════════════════
 function renderTaskTable() {
   const tbody = document.getElementById('taskTableBody');
@@ -635,7 +614,7 @@ function renderDeliveriesTable() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 🔄 TAB SWITCHING - SIMPLE ✅
+// 🔄 TAB SWITCHING ✅
 // ═══════════════════════════════════════════════════════════════
 function switchTab(view, el) {
   const views = ['dashboard', 'tasks', 'couriers', 'deliveries'];
@@ -687,7 +666,7 @@ function loadCouriersToSelect() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 📦 TASK FUNCTIONS - SIMPLE ✅
+// 📦 TASK FUNCTIONS ✅
 // ═══════════════════════════════════════════════════════════════
 async function saveTask() {
   const pt = document.getElementById('taskPt').value.trim();
@@ -749,7 +728,7 @@ async function deleteTask(id) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 👤 COURIER FUNCTIONS - SIMPLE ✅
+// 👤 COURIER FUNCTIONS ✅
 // ═══════════════════════════════════════════════════════════════
 async function saveCourier() {
   const name = document.getElementById('courierName').value.trim();
@@ -765,28 +744,22 @@ async function saveCourier() {
   btn.innerHTML = '<div class="loading-spinner"></div>';
 
   try {
-    const {  user, error: authError } = await _supabase.auth.admin.createUser({
+    // Register via Supabase Auth (bukan admin.createUser)
+    const { data: authData, error: authError } = await _supabase.auth.signUp({
       email,
       password,
-      email_confirm: true,
-      user_metadata: { full_name: name, phone, role: 'Kurir' }
+      options: {
+          data:{  // ← '' key wajib ada!
+          full_name: name,
+          phone,
+          role: 'Kurir'
+        }
+      }
     });
-
     if (authError) throw authError;
 
-    if (user) {
-      await _supabase.from('profiles').insert({
-        id: user.id,
-        email,
-        full_name: name,
-        phone,
-        role: 'Kurir'
-      });
-    }
-
+    notify('Kurir terdaftar! Menunggu verifikasi email.', 'success');
     toggleModal('addCourierModal');
-    await loadData();
-    notify('Kurir berhasil ditambahkan', 'success');
   } catch (error) {
     notify(error.message, 'error');
   } finally {
@@ -796,7 +769,7 @@ async function saveCourier() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 📄 REPORT - SIMPLE ✅
+// 📄 REPORT ✅
 // ═══════════════════════════════════════════════════════════════
 function downloadReport() {
   if (tasks.length === 0) { notify('Belum ada data untuk dilaporkan', 'info'); return; }
@@ -852,7 +825,7 @@ function downloadReport() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 📱 MOBILE MENU - SIMPLE ✅
+// 📱 MOBILE MENU ✅
 // ═══════════════════════════════════════════════════════════════
 function toggleMobileMenu() {
   const sidebar = document.querySelector('aside');
@@ -865,58 +838,16 @@ function toggleMobileMenu() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 🔄 CHECK SESSION - SIMPLE ✅
-// ═══════════════════════════════════════════════════════════════
-async function checkSession() {
-  const saved = localStorage.getItem('currentUser');
-  if (saved) {
-    currentUser = JSON.parse(saved);
-    const { data } = await _supabase.auth.getSession();
-    if (data?.session) {
-      showAdminPanel();
-      await loadData();
-    } else {
-      localStorage.removeItem('currentUser');
-    }
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// 🚀 INIT - SIMPLE LIKE RW APP ✅
+// 🚀 INIT - CHECK ADMIN ACCESS ✅
 // ═══════════════════════════════════════════════════════════════
 window.onload = () => {
-  // Setup logo dengan fallback
-  const logoImg = document.getElementById('logoAuth');
-  if (logoImg) {
-    logoImg.src = LOGO_URL;
-    logoImg.onerror = function() {
-      console.warn('⚠️ Logo gagal dimuat, menggunakan fallback');
-      this.parentElement.innerHTML = '<i class="fas fa-truck-moving text-4xl text-blue-600"></i>';
-    };
-    setTimeout(function() {
-      if (!logoImg.complete || logoImg.naturalHeight === 0) {
-        if (logoImg.parentElement) {
-          logoImg.parentElement.innerHTML = '<i class="fas fa-truck-moving text-4xl text-blue-600"></i>';
-        }
-      }
-    }, 3000);
-  }
-
-  // Setup sidebar logo
-  const sidebarLogo = document.getElementById('logoSidebar');
-  if (sidebarLogo) {
-    sidebarLogo.src = LOGO_URL;
-    sidebarLogo.onerror = function() {
-      this.parentElement.innerHTML = '<i class="fas fa-truck-moving text-3xl text-blue-600"></i>';
-    };
-  }
-
   // Set current date
   document.getElementById('currentDate').innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-  checkSession();
-  console.log('✅ Admin ready - Pattern RW App!');
-  console.log('📡 Supabase URL:', SB_URL);
+  // ✅ Cek akses admin (proteksi utama)
+  checkAdminAccess();
+  
+  console.log('✅ Admin panel loaded - Protected by Single Login Pattern');
 };
 </script>
 </body>
