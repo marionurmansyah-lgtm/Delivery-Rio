@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dashboard - Delivery App</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#10B981">
+  <link rel="apple-touch-icon" href="https://lkzdktqplffaofkdzlxd.supabase.co/storage/v1/object/public/Logo/fsimage.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --primary: #040273;
+      --primary-dark: #059669;
+      --primary-light: #D1FAE5;
+      --secondary: #3B82F6;
+      --accent: #F59E0B;
+      --danger: #EF4444;
+      --success: #10B981;
+      --text: #1F2937;
+      --text-light: #6B7280;
+      --bg: #F3F4F6;
+      --card: #FFFFFF;
+      --border: #E5E7EB;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      --radius: 16px;
+      --radius-sm: 12px;
+      --radius-lg: 24px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(180deg, #F3F4F6 0%, #E5E7EB 100%);
+      color: var(--text);
+      line-height: 1.6;
+      padding-bottom: 90px;
+      min-height: 100vh;
+    }
+
+    /* Navbar Modern */
+    .navbar {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .back-btn {
+      width: 40px;
+      height: 40px;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 18px;
+      transition: all 0.2s;
+      border: 1px solid var(--border);
+    }
+
+    .back-btn:active {
+      background: var(--border);
+      transform: scale(0.95);
+    }
+
+    .nav-logo {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+      border-radius: var(--radius-sm);
+    }
+
+    .nav-title {
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--primary);
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--primary-light);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    /* Header Gradient */
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 24px 20px 100px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 300px;
+      height: 300px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+    }
+
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -10%;
+      width: 200px;
+      height: 200px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 50%;
+    }
+
+    .header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      position: relative;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 14px;
+      position: relative;
+    }
+
+    /* Stats Cards Modern */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 0 20px;
+      margin-top: -70px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .stat-card {
+      background: var(--card);
+      padding: 20px 16px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      text-align: center;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(229, 231, 235, 0.5);
+    }
+
+    .stat-card:active {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: var(--shadow-xl);
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 12px;
+      background: var(--primary-light);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Filter Section Modern */
+    .filter-section {
+      background: var(--card);
+      padding: 20px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .filter-section h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      flex: 1;
+      min-width: 80px;
+      padding: 10px 16px;
+      border: 2px solid var(--border);
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+      color: var(--text-light);
+    }
+
+    .filter-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .filter-btn:active {
+      transform: scale(0.95);
+    }
+
+    .filter-input {
+      flex: 1;
+      min-width: 140px;
+      padding: 10px 14px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      background: var(--card);
+      transition: all 0.2s;
+    }
+
+    .filter-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    /* Action Cards Modern */
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .action-card {
+      background: var(--card);
+      padding: 24px 20px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      text-decoration: none;
+      color: var(--text);
+      text-align: center;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .action-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+      transform: scaleX(0);
+      transition: transform 0.3s;
+    }
+
+    .action-card:active::before {
+      transform: scaleX(1);
+    }
+
+    .action-card:active {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .action-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 12px;
+      background: linear-gradient(135deg, var(--primary-light) 0%, #A7F3D0 100%);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      transition: all 0.3s;
+    }
+
+    .action-card:active .action-icon {
+      transform: scale(1.1);
+    }
+
+    .action-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* Table Section Modern */
+    .table-section {
+      background: var(--card);
+      padding: 20px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .table-section h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .data-table th {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 14px 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .data-table th:first-child {
+      border-radius: var(--radius-sm) 0 0 0;
+    }
+
+    .data-table th:last-child {
+      border-radius: 0 var(--radius-sm) 0 0;
+    }
+
+    .data-table td {
+      padding: 14px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .data-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .data-table tr:hover {
+      background: var(--primary-light);
+    }
+
+    .status {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: inline-block;
+    }
+
+    .status-pending {
+      background: #FEF3C7;
+      color: #D97706;
+    }
+
+    .status-completed, .status-success {
+      background: #D1FAE5;
+      color: #059669;
+    }
+
+    .status-failed {
+      background: #FEE2E2;
+      color: #DC2626;
+    }
+
+    /* Bottom Navigation Modern */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex;
+      justify-content: space-around;
+      padding: 12px 0;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+      z-index: 100;
+      border-top: 1px solid var(--border);
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+      color: var(--text-light);
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-weight: 600;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+    }
+
+    .nav-item.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 4px;
+      background: var(--primary);
+      border-radius: 50%;
+    }
+
+    .nav-item .icon {
+      font-size: 22px;
+      transition: all 0.2s;
+    }
+
+    .nav-item:active .icon {
+      transform: scale(1.2);
+    }
+
+    /* FAB Modern */
+    .fab {
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 26px;
+      box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+      cursor: pointer;
+      z-index: 99;
+      text-decoration: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .fab:active {
+      transform: scale(0.9) rotate(90deg);
+    }
+
+    /* Toast Modern */
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--text);
+      color: white;
+      padding: 14px 28px;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: var(--shadow-xl);
+      z-index: 1000;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 0;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success {
+      background: linear-gradient(135deg, var(--success) 0%, var(--primary-dark) 100%);
+    }
+
+    .toast.error {
+      background: linear-gradient(135deg, var(--danger) 0%, #DC2626 100%);
+    }
+
+    /* PDF Report */
+    #pdfReport {
+      display: none;
+      padding: 40px;
+      background: white;
+      max-width: 210mm;
+    }
+
+    .report-header {
+      text-align: center;
+      border-bottom: 3px solid var(--primary);
+      padding-bottom: 24px;
+      margin-bottom: 30px;
+    }
+
+    .report-logo {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 12px;
+      object-fit: contain;
+    }
+
+    .report-company {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 6px;
+    }
+
+    .report-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .report-info {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 30px;
+      background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
+      padding: 24px;
+      border-radius: var(--radius);
+    }
+
+    .report-info-item {
+      font-size: 13px;
+    }
+
+    .report-info-label {
+      font-weight: 700;
+      color: var(--text-light);
+      margin-bottom: 4px;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    .report-info-value {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .report-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+    }
+
+    .report-table th {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 14px 12px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .report-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+
+    .report-footer {
+      margin-top: 40px;
+      padding-top: 24px;
+      border-top: 2px solid var(--border);
+    }
+
+    .report-signature {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 60px;
+      margin-top: 60px;
+    }
+
+    .signature-box {
+      text-align: center;
+    }
+
+    .signature-line {
+      border-top: 2px solid var(--text);
+      margin-top: 70px;
+      padding-top: 8px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    /* Loading State */
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-light);
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+
+      .stat-card {
+        padding: 16px 12px;
+      }
+
+      .stat-value {
+        font-size: 24px;
+      }
+
+      .filter-group {
+        flex-direction: column;
+      }
+
+      .filter-btn, .filter-input {
+        width: 100%;
+      }
+
+      .actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .data-table {
+        font-size: 12px;
+      }
+
+      .data-table th, .data-table td {
+        padding: 10px 8px;
+      }
+    }
+
+    /* Empty State Modern */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 2px dashed var(--border);
+    }
+
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .empty-text {
+      font-size: 13px;
+      color: var(--text-light);
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar Modern -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <a href="index.html" class="back-btn">
+        <i class="fas fa-arrow-left"></i>
+      </a>
+      <img src="https://lkzdktqplffaofkdzlxd.supabase.co/storage/v1/object/public/Logo/fsimage.png" alt="Logo" class="nav-logo">
+      <span class="nav-title">PT Klase Auto Rental</span>
+    </div>
+    <div class="user-info">
+      <div class="user-avatar" id="userAvatar">R</div>
+      <span id="userName">Rio</span>
+    </div>
+  </nav>
+
+  <!-- Header Gradient -->
+  <div class="header">
+    <h1 id="pageTitle">Dashboard Kurir</h1>
+    <p id="currentDate">Senin, 2 Maret 2026</p>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">📋</div>
+      <div class="stat-value" id="totalTasks">0</div>
+      <div class="stat-label">Total</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✅</div>
+      <div class="stat-value" id="completedTasks">0</div>
+      <div class="stat-label">Selesai</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-value" id="pendingTasks">0</div>
+      <div class="stat-label">Pending</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Filter Section -->
+    <div class="filter-section">
+      <h3><i class="fas fa-filter"></i> Filter Laporan</h3>
+      <div class="filter-group">
+        <button class="filter-btn active" onclick="setFilter('daily')" id="btnDaily">Harian</button>
+        <button class="filter-btn" onclick="setFilter('weekly')" id="btnWeekly">Mingguan</button>
+        <button class="filter-btn" onclick="setFilter('monthly')" id="btnMonthly">Bulanan</button>
+      </div>
+      <div class="filter-group" style="margin-top: 12px;">
+        <input type="date" class="filter-input" id="dateFrom" onchange="applyFilter()">
+        <input type="date" class="filter-input" id="dateTo" onchange="applyFilter()">
+      </div>
+    </div>
+
+    <!-- Action Cards -->
+    <div class="actions-grid">
+      <a href="FORM-PENGANTARAN.html" class="action-card">
+        <div class="action-icon">📤</div>
+        <div class="action-label">Input Pengantaran</div>
+       <a href="#" class="action-card" onclick="contactAdmin(); return false;">
+    <div class="action-icon">📞</div>
+    <div class="action-label">Hubungi Admin</div>       
+      </a>
+      <a href="#" class="action-card" onclick="downloadReport('pdf'); return false;">
+        <div class="action-icon">📄</div>
+        <div class="action-label">Download PDF</div>
+      </a>
+      <a href="#" class="action-card" onclick="downloadReport('excel'); return false;">
+        <div class="action-icon">📊</div>
+        <div class="action-label">Download Excel</div>
+      </a>
+      <a href="#" class="action-card" onclick="refreshData(); return false;">
+        <div class="action-icon">🔄</div>
+        <div class="action-label">Refresh</div>
+      </a>
+    </div>
+    
+
+    <!-- Table Section -->
+    <div class="table-section">
+      <h3><i class="fas fa-list"></i> Riwayat Pengantaran</h3>
+      <div style="overflow-x: auto;">
+        <table class="data-table" id="reportTable">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Tanggal</th>
+              <th>PT/Penerima</th>
+              <th>Alamat</th>
+              <th>Status</th>
+              <th>Keterangan</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr>
+              <td colspan="6" class="loading">
+                <div class="loading-spinner"></div>
+                <div>Memuat data...</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAB -->
+  <a href="FORM-PENGANTARAN.html" class="fab">
+    <i class="fas fa-plus"></i>
+  </a>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="DASHBOARD.html" class="nav-item active">
+      <div class="icon"><i class="fas fa-home"></i></div>
+      <div>Home</div>
+    </a>
+    <a href="FORM-PENGANTARAN.html" class="nav-item">
+      <div class="icon"><i class="fas fa-clipboard-list"></i></div>
+      <div>Tugas</div>
+    </a>
+    <a href="#" class="nav-item" onclick="downloadReport('pdf'); return false;">
+      <div class="icon"><i class="fas fa-file-pdf"></i></div>
+      <div>PDF</div>
+    </a>
+    <a href="#" class="nav-item" onclick="logout(); return false;">
+      <div class="icon"><i class="fas fa-sign-out-alt"></i></div>
+      <div>Logout</div>
+    </a>
+  </nav>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- PDF Report Template -->
+  <div id="pdfReport">
+    <div class="report-header">
+      <img src="https://lkzdktqplffaofkdzlxd.supabase.co/storage/v1/object/public/Logo/fsimage.png" alt="Logo" class="report-logo">
+      <div class="report-company">PT KLASE AUTO RENTAL</div>
+      <div class="report-title">LAPORAN PENGANTARAN DOKUMEN</div>
+      <div style="font-size:11px;color:#666;">Jl. Contoh No. 123, Jakarta | Telp: 021-12345678</div>
+    </div>
+    <div class="report-info">
+      <div class="report-info-item">
+        <div class="report-info-label">Nama</div>
+        <div id="reportName">-</div>
+      </div>
+      <div class="report-info-item">
+        <div class="report-info-label">Jabatan</div>
+        <div id="reportPosition">-</div>
+      </div>
+      <div class="report-info-item">
+        <div class="report-info-label">Periode</div>
+        <div id="reportPeriod">-</div>
+      </div>
+      <div class="report-info-item">
+        <div class="report-info-label">Tanggal Cetak</div>
+        <div id="reportPrintDate">-</div>
+      </div>
+    </div>
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>Tanggal</th>
+          <th>PT/Penerima</th>
+          <th>Alamat</th>
+          <th>Status</th>
+          <th>Keterangan</th>
+        </tr>
+      </thead>
+      <tbody id="reportTableBody"></tbody>
+    </table>
+    <div class="report-footer">
+      <div class="report-signature">
+        <div class="signature-box">
+          <div>Kurir/Admin</div>
+          <div class="signature-line" id="reportSign">-</div>
+        </div>
+        <div class="signature-box">
+          <div>Supervisor</div>
+          <div class="signature-line">( _________________ )</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const SUPABASE_URL = 'https://lkzdktqplffaofkdzlxd.supabase.co';
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremRrdHFwbGZmYW9ma2R6bHhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNjI3MzcsImV4cCI6MjA4NzkzODczN30.bCXkYJz9zbg5MrB9ju3gKMgH4modl8Xj5ySqyMQocqI';
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      let allData = [];
+      let filteredData = [];
+      let currentFilter = 'daily';
+      let currentUser = null;
+
+      function checkAuth() {
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user || !localStorage.getItem('isLoggedIn')) {
+          window.location.href = 'index.html';
+          return null;
+        }
+        currentUser = user;
+        return user;
+      }
+
+      window.logout = function() {
+        if (confirm('Yakin ingin logout?')) {
+          localStorage.removeItem('user');
+          localStorage.removeItem('isLoggedIn');
+          window.location.href = 'index.html';
+        }
+      };
+
+      function showToast(message, type = 'info') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = 'toast ' + type + ' show';
+        setTimeout(() => toast.classList.remove('show'), 3000);
+      }
+
+      function getInitials(name) {
+        return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      }
+
+      window.setFilter = function(type) {
+        currentFilter = type;
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('btn' + type.charAt(0).toUpperCase() + type.slice(1)).classList.add('active');
+        applyFilter();
+      };
+
+      window.applyFilter = function() {
+        const dateFrom = document.getElementById('dateFrom').value;
+        const dateTo = document.getElementById('dateTo').value;
+        const now = new Date();
+
+        filteredData = allData.filter(item => {
+          if (!item.tanggal && !item.waktu) return false;
+          const itemDate = new Date(item.tanggal || item.waktu);
+
+          if (currentFilter === 'daily') {
+            return itemDate.toDateString() === now.toDateString();
+          } else if (currentFilter === 'weekly') {
+            const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+            return itemDate >= weekAgo;
+          } else if (currentFilter === 'monthly') {
+            return itemDate.getMonth() === now.getMonth() && itemDate.getFullYear() === now.getFullYear();
+          }
+
+          if (dateFrom && itemDate < new Date(dateFrom)) return false;
+          if (dateTo && itemDate > new Date(dateTo)) return false;
+          return true;
+        });
+
+        renderTable(filteredData);
+        updateStats();
+      };
+
+      function updateStats() {
+        const completed = filteredData.filter(d => d.status === 'Completed' || d.status === 'Success').length;
+        const pending = filteredData.filter(d => d.status === 'Pending' || d.status === 'On Delivery').length;
+        document.getElementById('totalTasks').textContent = filteredData.length;
+        document.getElementById('completedTasks').textContent = completed;
+        document.getElementById('pendingTasks').textContent = pending;
+      }
+
+      function renderTable(data) {
+        const tbody = document.getElementById('tableBody');
+        if (data.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6">
+                <div class="empty-state">
+                  <div class="empty-icon">📦</div>
+                  <div class="empty-title">Belum ada data</div>
+                  <div class="empty-text">Tidak ada riwayat pengantaran untuk periode ini</div>
+                </div>
+              </td>
+            </tr>
+          `;
+          return;
+        }
+        tbody.innerHTML = data.map((item, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${new Date(item.tanggal || item.waktu).toLocaleDateString('id-ID')}</td>
+            <td>${item.nama_pt || item.nama_penerima || 'N/A'}</td>
+            <td>${item.alamat || '-'}</td>
+            <td><span class="status status-${(item.status || 'pending').toLowerCase()}">${item.status || 'Pending'}</span></td>
+            <td>${item.keterangan || item.catatan || '-'}</td>
+          </tr>
+        `).join('');
+      }
+
+      async function loadData() {
+        const user = checkAuth();
+        if (!user) return;
+
+        document.getElementById('userName').textContent = user.nama || user.email.split('@')[0];
+        document.getElementById('userAvatar').textContent = getInitials(user.nama || user.email);
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        document.getElementById('pageTitle').textContent = user.role === 'admin' ? 'Admin Dashboard' : 'Dashboard Kurir';
+
+        let tugasData = [], pengantaranData = [];
+
+        if (user.role === 'admin') {
+          const { data: tugas } = await supabase.from('tugas').select('*').order('tanggal', { ascending: false });
+          const { data: pengantaran } = await supabase.from('pengantaran').select('*').order('waktu', { ascending: false });
+          tugasData = tugas || [];
+          pengantaranData = pengantaran || [];
+        } else {
+          const { data: tugas } = await supabase.from('tugas').select('*').eq('kurir_id', user.email).order('tanggal', { ascending: false });
+          const { data: pengantaran } = await supabase.from('pengantaran').select('*').eq('kurir_id', user.email).order('waktu', { ascending: false });
+          tugasData = tugas || [];
+          pengantaranData = pengantaran || [];
+        }
+
+        allData = [...tugasData, ...pengantaranData].sort((a, b) => {
+          const dateA = new Date(a.tanggal || a.waktu);
+          const dateB = new Date(b.tanggal || b.waktu);
+          return dateB - dateA;
+        });
+
+        applyFilter();
+      }
+
+      window.refreshData = function() {
+        showToast('🔄 Memuat ulang...', 'info');
+        loadData();
+      };
+
+      window.downloadReport = async function(type) {
+        const user = checkAuth();
+        if (!user) return;
+
+        document.getElementById('reportName').textContent = user.nama || user.email;
+        document.getElementById('reportPosition').textContent = user.role === 'admin' ? 'Admin' : 'Kurir';
+        const periodText = currentFilter === 'daily' ? 'Harian' : currentFilter === 'weekly' ? 'Mingguan' : 'Bulanan';
+        document.getElementById('reportPeriod').textContent = periodText;
+        document.getElementById('reportPrintDate').textContent = new Date().toLocaleDateString('id-ID');
+        document.getElementById('reportSign').textContent = user.nama || user.email;
+
+        document.getElementById('reportTableBody').innerHTML = filteredData.map((item, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${new Date(item.tanggal || item.waktu).toLocaleDateString('id-ID')}</td>
+            <td>${item.nama_pt || item.nama_penerima || '-'}</td>
+            <td>${item.alamat || '-'}</td>
+            <td>${item.status || 'Pending'}</td>
+            <td>${item.keterangan || item.catatan || '-'}</td>
+          </tr>
+        `).join('');
+
+        if (type === 'pdf') {
+          const element = document.getElementById('pdfReport');
+          element.style.display = 'block';
+          const opt = {
+            margin: 10,
+            filename: `Laporan-${user.role}-${new Date().toISOString().split('T')[0]}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          };
+          await html2pdf().set(opt).from(element).save();
+          element.style.display = 'none';
+          showToast('✅ PDF diunduh', 'success');
+        } else {
+          const ws = XLSX.utils.json_to_sheet(filteredData.map((d, i) => ({
+            No: i + 1,
+            Tanggal: new Date(d.tanggal || d.waktu).toLocaleDateString('id-ID'),
+            'PT/Penerima': d.nama_pt || d.nama_penerima,
+            Alamat: d.alamat || '-',
+            Status: d.status || 'Pending',
+            Keterangan: d.keterangan || d.catatan || '-'
+          })));
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, 'Laporan');
+          XLSX.writeFile(wb, `Laporan-${user.role}-${new Date().toISOString().split('T')[0]}.xlsx`);
+          showToast('✅ Excel diunduh', 'success');
+        }
+      };
+
+      document.addEventListener('DOMContentLoaded', () => {
+        loadData();
+      });
+    })();
+    
+      window.contactAdmin = function() {
+    const adminPhone = '6285793117746'; // Ganti dengan nomor admin
+    const user = JSON.parse(localStorage.getItem('user'));
+    const message = `Halo Admin, saya ${user.nama} (${user.email}). Ada pertanyaan mengenai tugas pengantaran.`;
+    const cleanPhone = adminPhone.replace(/[^0-9]/g, '');
+    const waPhone = cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone;
+    const url = `https://wa.me/${waPhone}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+  </script>
+</body>
+</html>
