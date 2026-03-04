@@ -2,98 +2,262 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login - PT Klase Auto Rental</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PT Klase Auto Rental - Delivery App</title>
+<!-- ✅ CDN TANPA SPASI EKSTRA -->
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<!-- ✅ SUPABASE CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 .hide { display: none !important; }
 .fade-in { animation: fadeIn 0.3s ease-in-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e5e7eb; z-index: 50; padding-bottom: env(safe-area-inset-bottom); box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05); }
+.photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.photo-item { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.photo-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; }
+.photo-item:active img { transform: scale(0.95); }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.sticky-note { background: #fef3c7; padding: 24px; border-radius: 4px; max-width: 380px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); position: relative; }
+.sticky-note::before { content: ''; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 32px; height: 32px; background: #ef4444; border-radius: 50%; border: 4px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+@media print { .no-print { display: none !important; } body { background: white; } }
 .loading-spinner { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.password-toggle { cursor: pointer; color: #9ca3af; transition: color 0.2s; }
+.password-toggle:hover { color: #3b82f6; }
 </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 via-white to-blue-50 min-h-screen flex items-center justify-center p-4">
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
 
-<div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100 fade-in">
-  <div class="text-center mb-8">
-    <!-- ✅ LOGO CONTAINER -->
-    <div class="w-24 h-24 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 overflow-hidden shadow-inner border border-gray-100">
-      <img id="logoAuth" src="" alt="Logo PT Klase" class="w-full h-full object-contain p-2">
+<!-- ================= AUTH SECTION (SATU PINTU LOGIN) ================= -->
+<section id="authSection" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-white to-blue-50">
+  <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100 fade-in">
+    <div class="text-center mb-8">
+      <div class="w-24 h-24 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 overflow-hidden shadow-inner border border-gray-100" id="logoContainer">
+        <img id="logoAuth" src="" alt="Logo PT Klase" class="w-full h-full object-contain p-2">
+      </div>
+      <h1 class="text-2xl font-bold text-blue-900">PT Klase Auto Rental</h1>
+      <p class="text-gray-500 text-sm mt-1">Delivery Partner App</p>
     </div>
-    <h1 class="text-2xl font-bold text-blue-900">PT Klase Auto Rental</h1>
-    <p class="text-gray-500 text-sm mt-1">Delivery Partner App</p>
-  </div>
 
-  <!-- Login Form -->
-  <div id="loginForm">
-    <h2 class="text-xl font-semibold mb-6 text-gray-700">Masuk ke Akun</h2>
+    <!-- Login Form (Untuk Admin & Kurir) -->
+    <div id="loginForm">
+      <h2 class="text-xl font-semibold mb-6 text-gray-700">Masuk ke Akun</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1 uppercase">Email</label>
+          <input type="email" id="loginEmail" placeholder="nama@email.com" class="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1 uppercase">Password</label>
+          <input type="password" id="loginPass" placeholder="••••••••" class="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
+        </div>
+      </div>
+      <button onclick="handleLogin()" id="btnLogin" class="w-full mt-8 bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition">Masuk</button>
+      <div class="mt-6 text-center">
+        <p class="text-sm text-gray-500">Belum punya akun? <a href="#" onclick="toggleAuth('register')" class="text-blue-600 font-semibold">Daftar sebagai Kurir</a></p>
+      </div>
+    </div>
+
+    <!-- Register Form (HANYA untuk Kurir) -->
+    <div id="registerForm" class="hide">
+      <h2 class="text-xl font-semibold mb-6 text-gray-700">Daftar Kurir Baru</h2>
+      <div class="space-y-3">
+        <input type="text" id="regName" placeholder="Nama Lengkap" class="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
+        <input type="email" id="regEmail" placeholder="Email" class="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
+        <input type="tel" id="regPhone" placeholder="Nomor HP" class="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
+        <input type="password" id="regPass" placeholder="Password (min 6 karakter)" class="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
+      </div>
+      <button onclick="handleRegister()" id="btnRegister" class="w-full mt-6 bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700 transition">Daftar Sekarang</button>
+      <div class="mt-6 text-center">
+        <p class="text-sm text-gray-500">Sudah punya akun? <a href="#" onclick="toggleAuth('login')" class="text-blue-600 font-semibold">Login</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= KURIR DASHBOARD (EMBEDDED) ================= -->
+<section id="kurirDashboard" class="hide pb-24 min-h-screen">
+  <header class="bg-white shadow-sm sticky top-0 z-40 no-print">
+    <div class="p-4 flex justify-between items-center border-b">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+          <i class="fas fa-user"></i>
+        </div>
+        <div>
+          <h2 class="font-bold text-gray-800">Halo, <span id="userName">Kurir</span></h2>
+          <p class="text-xs text-green-600 font-medium"><span class="w-2 h-2 bg-green-500 rounded-full inline-block mr-1"></span>Online</p>
+        </div>
+      </div>
+      <button onclick="handleLogout()" class="w-11 h-11 rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition">
+        <i class="fas fa-sign-out-alt"></i>
+      </button>
+    </div>
+    <div class="grid grid-cols-2 gap-4 p-4">
+      <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-5 rounded-2xl shadow-lg">
+        <p class="text-xs opacity-80 mb-1">Tugas Hari Ini</p>
+        <h3 class="text-3xl font-bold" id="statToday">0</h3>
+      </div>
+      <div class="bg-gradient-to-br from-green-500 to-green-600 text-white p-5 rounded-2xl shadow-lg">
+        <p class="text-xs opacity-80 mb-1">Selesai</p>
+        <h3 class="text-3xl font-bold" id="statDone">0</h3>
+      </div>
+    </div>
+  </header>
+
+  <div class="p-4 no-print">
+    <div class="flex bg-gray-200/80 p-1.5 rounded-2xl mb-5">
+      <button id="btnTasks" onclick="switchTab('tasks', this)" class="flex-1 py-2.5 text-sm font-bold rounded-xl bg-white text-blue-600 shadow-sm">📋 Tugas</button>
+      <button id="btnHistory" onclick="switchTab('history', this)" class="flex-1 py-2.5 text-sm font-bold rounded-xl text-gray-500">📜 Riwayat</button>
+    </div>
+    <div id="taskList" class="space-y-4"></div>
+    <div id="historyList" class="hide"><div class="photo-grid" id="photoGrid"></div></div>
+  </div>
+</section>
+
+<!-- DELIVERY MODAL (KURIR) -->
+<div id="deliveryModal" class="modal-backdrop hide no-print">
+  <div class="bg-white w-full max-w-md rounded-3xl p-6 m-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="font-bold text-xl"><i class="fas fa-clipboard-check text-blue-600 mr-2"></i>Form Pengantaran</h3>
+      <button onclick="closeModal('deliveryModal')" class="w-9 h-9 rounded-full bg-gray-100 hover:bg-red-100 hover:text-red-500 transition">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <input type="hidden" id="modalTaskId">
     <div class="space-y-4">
-      <div>
-        <label class="block text-xs font-medium text-gray-500 mb-1 uppercase">Email</label>
-        <input type="email" id="loginEmail" placeholder="nama@email.com" class="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
+      <div class="bg-blue-50 p-4 rounded-xl border border-blue-200">
+        <p class="text-xs text-blue-600 font-bold uppercase">ID Tugas</p>
+        <p class="font-mono font-bold text-blue-900 text-lg" id="formTaskId">-</p>
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-500 mb-1 uppercase">Password</label>
-        <input type="password" id="loginPass" placeholder="••••••••" class="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
+        <label class="text-xs font-bold text-gray-500 uppercase block mb-1.5">Nama PT</label>
+        <input type="text" id="formTaskPt" class="w-full p-3.5 bg-gray-50 border rounded-xl" readonly>
       </div>
-    </div>
-    <button onclick="handleLogin()" id="btnLogin" class="w-full mt-8 bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition">Masuk</button>
-    <div class="mt-6 text-center">
-      <p class="text-sm text-gray-500">Belum punya akun? <a href="#" onclick="toggleAuth('register')" class="text-blue-600 font-semibold">Daftar disini</a></p>
-    </div>
-  </div>
-
-  <!-- Register Form -->
-  <div id="registerForm" class="hide">
-    <h2 class="text-xl font-semibold mb-6 text-gray-700">Daftar Kurir Baru</h2>
-    <div class="space-y-3">
-      <input type="text" id="regName" placeholder="Nama Lengkap" class="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
-      <input type="email" id="regEmail" placeholder="Email" class="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
-      <input type="tel" id="regPhone" placeholder="Nomor HP" class="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
-      <input type="password" id="regPass" placeholder="Password (min 6 karakter)" class="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
-    </div>
-    <button onclick="handleRegister()" id="btnRegister" class="w-full mt-6 bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700 transition">Daftar Sekarang</button>
-    <div class="mt-6 text-center">
-      <p class="text-sm text-gray-500">Sudah punya akun? <a href="#" onclick="toggleAuth('login')" class="text-blue-600 font-semibold">Login</a></p>
+      <div>
+        <label class="text-xs font-bold text-gray-500 uppercase block mb-1.5">📍 Lokasi GPS</label>
+        <div class="flex gap-2">
+          <input type="text" id="delLocation" class="flex-1 p-3.5 bg-gray-50 border rounded-xl text-sm" readonly value="Klik ambil lokasi">
+          <button onclick="getLocation()" id="btnGPS" class="bg-blue-600 text-white px-5 rounded-xl hover:bg-blue-700"><i class="fas fa-crosshairs"></i></button>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-500 uppercase block mb-1.5">Nama Penerima <span class="text-red-500">*</span></label>
+        <input type="text" id="delRecipient" class="w-full p-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Nama penerima">
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-500 uppercase block mb-1.5">📷 Foto Bukti</label>
+        <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-gray-50 cursor-pointer relative">
+          <input type="file" id="delPhoto" accept="image/*" capture="environment" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+          <i class="fas fa-camera text-3xl text-gray-400 mb-3"></i>
+          <p class="text-sm text-gray-600">Klik untuk upload foto</p>
+          <img id="photoPreview" class="hidden mt-4 h-40 mx-auto rounded-xl object-cover border-2 border-white shadow-lg">
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-500 uppercase block mb-1.5">Status</label>
+        <select id="delStatus" class="w-full p-3.5 border-2 border-gray-200 rounded-xl bg-white outline-none">
+          <option value="Terkirim">✅ Terkirim</option>
+          <option value="Pending">⏳ Pending</option>
+          <option value="Retur">🔄 Retur</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-500 uppercase block mb-1.5">Keterangan</label>
+        <textarea id="delNotes" class="w-full p-3.5 border-2 border-gray-200 rounded-xl h-24 outline-none resize-none" placeholder="Catatan..."></textarea>
+      </div>
+      <button onclick="submitDelivery()" id="btnSubmit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-blue-700 transition">
+        <i class="fas fa-paper-plane mr-2"></i>Kirim Laporan
+      </button>
     </div>
   </div>
 </div>
 
+<!-- PHOTO DETAIL MODAL -->
+<div id="photoModal" class="modal-backdrop hide no-print" onclick="closeModal('photoModal')">
+  <div class="sticky-note m-4" onclick="event.stopPropagation()">
+    <button onclick="closeModal('photoModal')" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/50 hover:bg-red-100"><i class="fas fa-times"></i></button>
+    <h3 class="font-bold text-xl mb-5 text-blue-900 border-b-2 border-blue-900/20 pb-3 uppercase text-center">📋 Detail Pengiriman</h3>
+    <img id="fullPhoto" class="w-full h-56 object-cover rounded-lg border-4 border-white shadow-lg mb-5" src="">
+    <div class="space-y-3 text-sm">
+      <div class="flex justify-between border-b pb-2"><span class="font-bold">ID:</span><span id="infoTaskId" class="font-mono">-</span></div>
+      <div class="flex justify-between border-b pb-2"><span class="font-bold">PT:</span><span id="infoPt">-</span></div>
+      <div class="flex justify-between border-b pb-2"><span class="font-bold">Penerima:</span><span id="infoRecipient">-</span></div>
+      <div class="flex justify-between border-b pb-2"><span class="font-bold">Waktu:</span><span id="infoSendDate">-</span></div>
+      <div class="pt-3 bg-white/50 p-3 rounded-lg"><span class="font-bold block mb-2">Catatan:</span><p id="infoNotes" class="italic">-</p></div>
+      <div class="pt-3 text-center">
+        <a id="infoMapLink" href="#" target="_blank" class="inline-block bg-blue-600 text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-blue-700">🗺️ Lihat di Maps</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV (KURIR) -->
+<nav id="mainNav" class="bottom-nav hide flex justify-around py-3 text-gray-400 text-xs font-bold no-print">
+  <button onclick="switchTab('tasks', this)" class="nav-item flex flex-col items-center gap-1.5 text-blue-600 w-full"><i class="fas fa-home text-xl"></i>Home</button>
+  <button onclick="switchTab('history', this)" class="nav-item flex flex-col items-center gap-1.5 w-full"><i class="fas fa-history text-xl"></i>Riwayat</button>
+  <button onclick="downloadReport()" class="nav-item flex flex-col items-center gap-1.5 w-full"><i class="fas fa-file-pdf text-xl"></i>Laporan</button>
+</nav>
+
 <script>
 // ═══════════════════════════════════════════════════════════════
-// ⚙️ CONFIG - PATTERN RW APP (MENGGUNAKAN _supabase) ✅
+// ⚙️ CONFIG - SINGLE LOGIN PATTERN ✅
 // ═══════════════════════════════════════════════════════════════
 const SB_URL = 'https://pyaqgicjxfgckzgxsvzz.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5YXFnaWNqeGZnY2t6Z3hzdnp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NjEwNjcsImV4cCI6MjA4ODEzNzA2N30.YnOXsN8UAFV9EQikIhTujDPiWjtxiba3co257LFs9w0';
 const LOGO_URL = 'https://pyaqgicjxfgckzgxsvzz.supabase.co/storage/v1/object/public/DELIVERY_PHOTOS/kar.png';
+const BUCKET_NAME = 'DELIVERY_PHOTOS';
 
 // ✅ PENTING: Gunakan _supabase (dengan underscore) untuk menghindari konflik
 const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
+// 🔐 ADMIN HARDCODED CREDENTIALS (Hanya untuk admin)
+const ADMIN_CRED = {
+  email: 'mariovarlente@gmail.com',
+  password: 'adminklase1',
+  name: 'Admin Supervisor'
+};
+
 let currentUser = null;
+let tasks = [];
+let deliveries = [];
 
 // ═══════════════════════════════════════════════════════════════
-// 🔔 NOTIFY FUNCTION - LIKE RW APP ✅
+// 🔔 NOTIFY FUNCTION
 // ═══════════════════════════════════════════════════════════════
 function notify(msg, icon = 'info') {
   Swal.fire({ icon, title: msg, timer: 2000, showConfirmButton: false });
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 🔄 TOGGLE AUTH VIEW
+// 👁️ TOGGLE PASSWORD & AUTH VIEW
 // ═══════════════════════════════════════════════════════════════
+function togglePassword(inputId, iconEl) {
+  const input = document.getElementById(inputId);
+  const icon = iconEl.querySelector('i');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.classList.replace('fa-eye', 'fa-eye-slash');
+  } else {
+    input.type = 'password';
+    icon.classList.replace('fa-eye-slash', 'fa-eye');
+  }
+}
+
 function toggleAuth(view) {
   document.getElementById('loginForm').classList.toggle('hide', view !== 'login');
   document.getElementById('registerForm').classList.toggle('hide', view !== 'register');
 }
 
+function closeModal(id) {
+  document.getElementById(id).classList.add('hide');
+}
+
 // ═══════════════════════════════════════════════════════════════
-// 🔐 LOGIN - SIMPLE & DIRECT ✅
+// 🔐 LOGIN - SATU PINTU UNTUK SEMUA USER ✅
 // ═══════════════════════════════════════════════════════════════
 async function handleLogin() {
   const email = document.getElementById('loginEmail').value.trim();
@@ -106,34 +270,62 @@ async function handleLogin() {
   btn.innerHTML = '<div class="loading-spinner"></div> Memproses...';
 
   try {
+    // ✅ 1. CEK ADMIN HARDCODED TERLEBIH DAHULU
+    if (email === ADMIN_CRED.email && password === ADMIN_CRED.password) {
+      currentUser = {
+        id: 'ADMIN_HARDCODED',
+        email: ADMIN_CRED.email,
+        name: ADMIN_CRED.name,
+        role: 'Admin'
+      };
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      notify('Berhasil Masuk sebagai Admin!', 'success');
+      setTimeout(() => {
+        window.location.href = 'admin.html'; // Redirect ke admin panel
+      }, 1000);
+      return;
+    }
+
+    // ✅ 2. CEK KURIR VIA SUPABASE AUTH
     const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
 
-    const { data: profile } = await _supabase.from('profiles').select('role, full_name').eq('id', data.user.id).single();
-    
+    // Ambil role dari tabel profiles
+    const { data: profile } = await _supabase
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', data.user.id)
+      .single();
+
+    // Pastikan user adalah Kurir (bukan Admin yang login via Supabase)
+    if (profile?.role === 'Admin') {
+      throw new Error('Login Admin hanya melalui form hardcoded.');
+    }
+
     currentUser = {
       id: data.user.id,
-      email,
+      email: data.user.email,
       name: profile?.full_name || email.split('@')[0],
       role: profile?.role || 'Kurir'
     };
 
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    notify('Berhasil Masuk sebagai Kurir!', 'success');
     
-    if (currentUser.role === 'Admin') {
-      window.location.href = 'admin.html';
-    } else {
-      window.location.href = 'dashboard.html';
-    }
+    setTimeout(() => {
+      showKurirDashboard();
+      loadData();
+    }, 1000);
+
   } catch (error) {
-    notify(error.message, 'error');
+    notify("Login Gagal: " + error.message, 'error');
     btn.disabled = false;
     btn.innerHTML = 'Masuk';
   }
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 📝 REGISTER - SIMPLE & DIRECT ✅
+// 📝 REGISTER - HANYA UNTUK KURIR ✅
 // ═══════════════════════════════════════════════════════════════
 async function handleRegister() {
   const name = document.getElementById('regName').value.trim();
@@ -149,10 +341,17 @@ async function handleRegister() {
   btn.innerHTML = '<div class="loading-spinner"></div> Mendaftar...';
 
   try {
+    // Register via Supabase Auth (default role = Kurir)
     const { data, error } = await _supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: name, phone, role: 'Kurir' } }
+      email: email,
+      password: password,
+      options: {
+          data:{  // ← '' key wajib ada!
+          full_name: name,
+          phone: phone,
+          role: 'Kurir'  // Default role untuk register
+        }
+      }
     });
     if (error) throw error;
 
@@ -167,15 +366,384 @@ async function handleRegister() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 🔄 CHECK SESSION ON LOAD - SIMPLE ✅
+// 🚪 LOGOUT ✅
+// ═══════════════════════════════════════════════════════════════
+async function handleLogout() {
+  const result = await Swal.fire({
+    title: 'Keluar?',
+    text: 'Anda harus login kembali',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    confirmButtonText: 'Ya, Logout'
+  });
+  if (result.isConfirmed) {
+    await _supabase.auth.signOut();
+    localStorage.removeItem('currentUser');
+    location.reload();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 🔄 SHOW/HIDE DASHBOARD ✅
+// ═══════════════════════════════════════════════════════════════
+function showKurirDashboard() {
+  document.getElementById('authSection').classList.add('hide');
+  document.getElementById('kurirDashboard').classList.remove('hide');
+  document.getElementById('mainNav').classList.remove('hide');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 📊 DATA FUNCTIONS ✅
+// ═══════════════════════════════════════════════════════════════
+async function loadData() {
+  try {
+    // Load tasks aktif untuk kurir
+    const {  activeTasks, error: tErr } = await _supabase
+      .from('tasks')
+      .select('*')
+      .neq('status', 'Selesai')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+    
+    if (tErr) throw tErr;
+    tasks = activeTasks || [];
+
+    // Load deliveries milik kurir ini
+    const {  myDeliveries, error: dErr } = await _supabase
+      .from('deliveries')
+      .select('*')
+      .eq('courier_id', currentUser.id)
+      .order('delivered_at', { ascending: false });
+    
+    if (dErr) throw dErr;
+    deliveries = myDeliveries || [];
+
+    document.getElementById('userName').innerText = currentUser.name;
+    renderTasks();
+    renderHistory();
+    updateStats();
+  } catch (error) {
+    notify('Gagal memuat  ' + error.message, 'error');
+  }
+}
+
+function updateStats() {
+  const today = new Date().toISOString().split('T')[0];
+  const todayTasks = tasks.filter(t => t.created_at?.startsWith(today));
+  const done = deliveries.filter(d => d.status === 'Terkirim');
+  
+  document.getElementById('statToday').innerText = todayTasks.length;
+  document.getElementById('statDone').innerText = done.length;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 🔄 TAB SWITCHING ✅
+// ═══════════════════════════════════════════════════════════════
+function switchTab(tab, el) {
+  const taskList = document.getElementById('taskList');
+  const histList = document.getElementById('historyList');
+  
+  if (el) {
+    document.querySelectorAll('.nav-item').forEach(nav => {
+      nav.classList.remove('text-blue-600', 'bg-white');
+      nav.classList.add('text-gray-400');
+    });
+    el.classList.remove('text-gray-400');
+    el.classList.add('text-blue-600', 'bg-white');
+  }
+
+  if (tab === 'tasks') {
+    taskList.classList.remove('hide');
+    histList.classList.add('hide');
+  } else {
+    taskList.classList.add('hide');
+    histList.classList.remove('hide');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 📋 RENDER FUNCTIONS ✅
+// ═══════════════════════════════════════════════════════════════
+function renderTasks() {
+  const container = document.getElementById('taskList');
+  
+  if (tasks.length === 0) {
+    container.innerHTML = '<div class="text-center py-20"><i class="fas fa-clipboard-check text-7xl text-gray-200 mb-6"></i><p class="text-gray-400">Tidak ada tugas baru</p></div>';
+    return;
+  }
+
+  let html = '';
+  tasks.forEach(t => {
+    const color = t.priority === 'high' ? 'border-l-red-500 bg-red-50' : 
+                  t.priority === 'mid' ? 'border-l-yellow-500 bg-yellow-50' : 
+                  'border-l-blue-500 bg-blue-50';
+    
+    html += `<div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 ${color} fade-in">
+      <h4 class="font-bold text-lg">${t.task_type || 'Pengantaran'}</h4>
+      <p class="text-gray-600">${t.pt_name}</p>
+      <p class="text-sm text-gray-500 my-2"><i class="fas fa-map-marker-alt text-red-400 mr-1"></i>${t.address}</p>
+      <p class="text-xs text-gray-400 mb-3">ID: <span class="font-mono">${t.id}</span></p>
+      <button onclick="openDeliveryModal('${t.id}')" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700">Kerjakan Tugas</button>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function renderHistory() {
+  const container = document.getElementById('photoGrid');
+  
+  if (deliveries.length === 0) {
+    container.innerHTML = '<div class="col-span-2 text-center py-20 text-gray-400"><i class="fas fa-images text-6xl mb-4"></i><p>Belum ada riwayat</p></div>';
+    return;
+  }
+
+  let html = '';
+  deliveries.forEach(d => {
+    html += `<div class="photo-item bg-white p-2 rounded-xl fade-in" onclick="showPhotoDetail('${d.id}')">
+      <img src="${d.photo_url || 'https://via.placeholder.com/300'}" class="w-full h-full object-cover rounded-lg">
+      <p class="text-xs font-bold mt-2 truncate">${d.recipient_name || 'Penerima'}</p>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 📦 DELIVERY FUNCTIONS ✅
+// ═══════════════════════════════════════════════════════════════
+function openDeliveryModal(taskId) {
+  const task = tasks.find(t => t.id === taskId);
+  if (!task) return;
+
+  document.getElementById('modalTaskId').value = task.id;
+  document.getElementById('formTaskId').innerText = task.id;
+  document.getElementById('formTaskPt').value = task.pt_name;
+  document.getElementById('delLocation').value = 'Klik ambil lokasi';
+  document.getElementById('delRecipient').value = '';
+  document.getElementById('delNotes').value = '';
+  document.getElementById('delPhoto').value = '';
+  document.getElementById('photoPreview').classList.add('hidden');
+  document.getElementById('deliveryModal').classList.remove('hide');
+}
+
+function getLocation() {
+  const btn = document.getElementById('btnGPS');
+  const inputLoc = document.getElementById('delLocation');
+
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  btn.disabled = true;
+  inputLoc.value = "Sedang mengunci sinyal GPS...";
+
+  if (!navigator.geolocation) {
+    inputLoc.value = 'Browser tidak mendukung GPS';
+    btn.innerHTML = '<i class="fas fa-times"></i>';
+    btn.disabled = false;
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lng = pos.coords.longitude.toFixed(6);
+      inputLoc.value = `${lat}, ${lng}`;
+      btn.innerHTML = '<i class="fas fa-check"></i>';
+      btn.classList.replace('bg-blue-600', 'bg-green-600');
+      btn.disabled = false;
+    },
+    (error) => {
+      const messages = { 1: "Izin lokasi ditolak", 2: "Sinyal GPS lemah", 3: "Waktu pencarian habis" };
+      const msg = messages[error.code] || "GPS tidak tersedia";
+      inputLoc.value = msg;
+      btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+      btn.disabled = false;
+      notify(msg, 'error');
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+}
+
+async function submitDelivery() {
+  const recipient = document.getElementById('delRecipient').value.trim();
+  const taskId = document.getElementById('modalTaskId').value;
+  const btn = document.getElementById('btnSubmit');
+
+  if (!recipient) { notify('Nama penerima wajib diisi!', 'warning'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<div class="loading-spinner"></div> Mengirim...';
+
+  try {
+    let photoUrl = '';
+    const file = document.getElementById('delPhoto').files[0];
+
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) throw new Error('Ukuran foto maksimal 5MB');
+      
+      const ext = file.name.split('.').pop().toLowerCase();
+      const fileName = `deliveries/${taskId}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
+      
+      const { error: uploadError } = await _supabase.storage.from(BUCKET_NAME).upload(fileName, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      
+      const { data: urlData } = _supabase.storage.from(BUCKET_NAME).getPublicUrl(fileName);
+      photoUrl = urlData.publicUrl;
+    }
+
+    let lat = null, long = null;
+    const locationValue = document.getElementById('delLocation').value;
+    if (locationValue.includes(',') && !locationValue.includes('Klik')) {
+      const parts = locationValue.split(',').map(p => parseFloat(p.trim()));
+      if (!isNaN(parts[0]) && !isNaN(parts[1])) { lat = parts[0]; long = parts[1]; }
+    }
+
+    await _supabase.from('deliveries').insert({
+      task_id: taskId,
+      courier_id: currentUser.id,
+      recipient_name: recipient,
+      location_lat: lat,
+      location_long: long,
+      photo_url: photoUrl,
+      status: document.getElementById('delStatus').value,
+      notes: document.getElementById('delNotes').value.trim(),
+      delivered_at: new Date().toISOString()
+    });
+
+    await _supabase.from('tasks').update({ status: 'Selesai' }).eq('id', taskId);
+    
+    closeModal('deliveryModal');
+    await loadData();
+    notify('Laporan terkirim!', 'success');
+
+  } catch (error) {
+    notify(error.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Kirim Laporan';
+  }
+}
+
+function showPhotoDetail(deliveryId) {
+  const delivery = deliveries.find(d => d.id === deliveryId);
+  if (!delivery) return;
+
+  const task = tasks.find(t => t.id === delivery.task_id);
+
+  document.getElementById('fullPhoto').src = delivery.photo_url || 'https://via.placeholder.com/300';
+  document.getElementById('infoTaskId').innerText = delivery.task_id || '-';
+  document.getElementById('infoPt').innerText = task?.pt_name || '-';
+  document.getElementById('infoRecipient').innerText = delivery.recipient_name || '-';
+  document.getElementById('infoSendDate').innerText = delivery.delivered_at ? new Date(delivery.delivered_at).toLocaleString('id-ID') : '-';
+  document.getElementById('infoNotes').innerText = delivery.notes || '-';
+
+  const mapLink = document.getElementById('infoMapLink');
+  if (delivery.location_lat && delivery.location_long) {
+    mapLink.href = `https://www.google.com/maps?q=${delivery.location_lat},${delivery.location_long}`;
+    mapLink.classList.remove('hide');
+  } else {
+    mapLink.classList.add('hide');
+  }
+
+  document.getElementById('photoModal').classList.remove('hide');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 📄 REPORT ✅
+// ═══════════════════════════════════════════════════════════════
+function downloadReport() {
+  if (deliveries.length === 0) { notify('Belum ada data untuk dilaporkan', 'info'); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('l', 'mm', 'a4');
+
+  doc.setFillColor(37, 99, 235);
+  doc.rect(0, 0, 297, 30, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16).setFont('helvetica', 'bold');
+  doc.text('PT KLASE AUTO RENTAL', 148.5, 12, { align: 'center' });
+  doc.setFontSize(10).setFont('helvetica', 'normal');
+  doc.text('LAPORAN PENGANTARAN DOKUMEN', 148.5, 20, { align: 'center' });
+  doc.setFontSize(8);
+  doc.text('Jl. Contoh No. 123, Jakarta | Telp: 021-12345678', 148.5, 26, { align: 'center' });
+
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Nama Kurir:', 14, 38);
+  doc.setFont('helvetica', 'normal');
+  doc.text(currentUser?.name || '-', 40, 38);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Periode:', 100, 38);
+  doc.setFont('helvetica', 'normal');
+  doc.text(new Date().toLocaleDateString('id-ID'), 125, 38);
+
+  const tableData = deliveries.map((d, i) => {
+    const task = tasks.find(t => t.id === d.task_id);
+    return [
+      i + 1, d.task_id || '-',
+      task?.created_at ? new Date(task.created_at).toLocaleString('id-ID') : '-',
+      task?.pt_name || '-', task?.address || '-',
+      d.recipient_name || '-', task?.task_type || '-',
+      d.delivered_at ? new Date(d.delivered_at).toLocaleString('id-ID') : '-'
+    ];
+  });
+
+  doc.autoTable({
+    startY: 45,
+    head: [['No', 'ID Tugas', 'Tgl Kirim', 'Nama PT', 'Alamat', 'Penerima', 'Jenis', 'Tgl Terima']],
+    body: tableData,
+    theme: 'grid',
+    headStyles: { fillColor: [37, 99, 235], fontSize: 8, fontStyle: 'bold' },
+    styles: { fontSize: 7 },
+    margin: { left: 14, right: 14 }
+  });
+
+  const finalY = doc.lastAutoTable.finalY + 20;
+  doc.setFont('helvetica', 'normal').setFontSize(9);
+  doc.text('Jakarta, ' + new Date().toLocaleDateString('id-ID'), 250, finalY);
+  doc.text('Hormat kami,', 250, finalY + 7);
+  doc.text('( _________________ )', 250, finalY + 20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Kurir', 250, finalY + 27);
+
+  doc.save(`Laporan_Kurir_${Date.now()}.pdf`);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 📷 PHOTO PREVIEW ✅
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('delPhoto').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (file) {
+    if (file.size > 5 * 1024 * 1024) { notify('Maksimal 5MB!', 'warning'); this.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = document.getElementById('photoPreview');
+      img.src = e.target.result;
+      img.classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 🔄 CHECK SESSION ✅
 // ═══════════════════════════════════════════════════════════════
 async function checkSession() {
   const saved = localStorage.getItem('currentUser');
   if (saved) {
     currentUser = JSON.parse(saved);
+    
+    // Jika admin hardcoded, redirect ke admin.html
+    if (currentUser.id === 'ADMIN_HARDCODED') {
+      window.location.href = 'admin.html';
+      return;
+    }
+    
+    // Jika kurir, verifikasi session Supabase
     const { data } = await _supabase.auth.getSession();
     if (data?.session) {
-      window.location.href = currentUser.role === 'Admin' ? 'admin.html' : 'dashboard.html';
+      showKurirDashboard();
+      await loadData();
     } else {
       localStorage.removeItem('currentUser');
     }
@@ -183,29 +751,31 @@ async function checkSession() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 🚀 INIT - SIMPLE LIKE RW APP ✅
+// 🚀 INIT - SINGLE LOGIN PATTERN ✅
 // ═══════════════════════════════════════════════════════════════
 window.onload = () => {
-  // ✅ Setup logo dengan error handling
+  // Setup logo dengan fallback
   const logoImg = document.getElementById('logoAuth');
-  if (logoImg) {
+  const logoContainer = document.getElementById('logoContainer');
+  
+  if (logoImg && logoContainer) {
     logoImg.src = LOGO_URL;
     logoImg.onerror = function() {
       console.warn('⚠️ Logo gagal dimuat, menggunakan fallback');
-      this.parentElement.innerHTML = '<i class="fas fa-truck-moving text-4xl text-blue-600"></i>';
+      logoContainer.innerHTML = '<i class="fas fa-truck-moving text-4xl text-blue-600"></i>';
     };
-    // Fallback timeout 3 detik
     setTimeout(function() {
-      if (!logoImg.complete || logoImg.naturalHeight === 0) {
-        if (logoImg.parentElement) {
-          logoImg.parentElement.innerHTML = '<i class="fas fa-truck-moving text-4xl text-blue-600"></i>';
+      if (!logoImg.complete || logoImg.naturalHeight === 0 || logoImg.naturalWidth === 0) {
+        console.warn('⚠️ Logo tidak muncul setelah timeout');
+        if (logoContainer && !logoContainer.querySelector('i')) {
+          logoContainer.innerHTML = '<i class="fas fa-truck-moving text-4xl text-blue-600"></i>';
         }
       }
-    }, 3000);
+    }, 5000);
   }
   
   checkSession();
-  console.log('✅ App ready - Pattern RW App!');
+  console.log('✅ App ready - Single Login Pattern!');
   console.log('📡 Supabase URL:', SB_URL);
 };
 </script>
