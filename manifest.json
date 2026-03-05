@@ -1,0 +1,21 @@
+{
+  "short_name": "KlaseApp",
+  "name": "PT Klase Auto Rental - Delivery",
+  "icons": [
+    {
+      "src": "https://pyaqgicjxfgckzgxsvzz.supabase.co/storage/v1/object/public/DELIVERY_PHOTOS/kar.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://pyaqgicjxfgckzgxsvzz.supabase.co/storage/v1/object/public/DELIVERY_PHOTOS/kar.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff"
+}
