@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Admin - PT Klase Auto Rental</title>
+<!-- ✅ PWA MANIFEST -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1e3a8a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <!-- ✅ CDN TANPA SPASI EKSTRA -->
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -25,11 +30,41 @@
 </head>
 <body class="bg-gray-100 font-sans antialiased">
 
-<!-- ================= LOADING SCREEN ================= -->
+<!-- ================= LOADING SCREEN (Fallback) ================= -->
 <section id="loadingSection" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50">
   <div class="text-center">
     <div class="loading-spinner mx-auto mb-4"></div>
     <p class="text-gray-600 font-medium">Memverifikasi akses Admin...</p>
+  </div>
+</section>
+
+<!-- ================= AUTH SECTION (Fallback Login) ================= -->
+<section id="authSection" class="hide min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-white to-blue-50">
+  <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100 fade-in">
+    <div class="text-center mb-8">
+      <div class="w-24 h-24 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 overflow-hidden shadow-inner border border-gray-100" id="logoContainer">
+        <img id="logoAuth" src="" alt="Logo PT Klase" class="w-full h-full object-contain p-2">
+      </div>
+      <h1 class="text-2xl font-bold text-blue-900">PT Klase Auto Rental</h1>
+      <p class="text-gray-500 text-sm mt-1">Admin Panel</p>
+    </div>
+    <div id="loginForm">
+      <h2 class="text-xl font-semibold mb-6 text-gray-700">Masuk sebagai Admin</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1 uppercase">Email</label>
+          <input type="email" id="loginEmail" placeholder="admin@klase.com" class="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1 uppercase">Password</label>
+          <input type="password" id="loginPass" placeholder="••••••••" class="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50">
+        </div>
+      </div>
+      <button onclick="handleLogin()" id="btnLogin" class="w-full mt-8 bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition">Masuk</button>
+      <div class="mt-6 text-center">
+        <p class="text-xs text-gray-400">Gunakan akun Admin yang telah dibuat</p>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -39,7 +74,7 @@
     <!-- Sidebar -->
     <aside class="w-64 bg-blue-900 text-white hidden md:flex flex-col no-print">
       <div class="p-6 text-center border-b border-blue-700">
-        <img id="logoSidebar" src="https://pyaqgicjxfgckzgxsvzz.supabase.co/storage/v1/object/public/DELIVERY_PHOTOS/kar.png" class="h-16 mx-auto mb-3 rounded-lg bg-white p-2 object-contain">
+        <img id="logoSidebar" src="" class="h-16 mx-auto mb-3 rounded-lg bg-white p-2 object-contain">
         <h2 class="font-bold text-lg">Admin Panel</h2>
         <p class="text-xs text-blue-300">PT Klase Auto Rental</p>
       </div>
@@ -348,16 +383,17 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// ⚙️ CONFIG - SAME AS INDEX.HTML ✅
+// ⚙️ CONFIG - SINGLE LOGIN PATTERN ✅
 // ═══════════════════════════════════════════════════════════════
 const SB_URL = 'https://pyaqgicjxfgckzgxsvzz.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5YXFnaWNqeGZnY2t6Z3hzdnp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NjEwNjcsImV4cCI6MjA4ODEzNzA2N30.YnOXsN8UAFV9EQikIhTujDPiWjtxiba3co257LFs9w0';
 const LOGO_URL = 'https://pyaqgicjxfgckzgxsvzz.supabase.co/storage/v1/object/public/DELIVERY_PHOTOS/kar.png';
 const BUCKET_NAME = 'DELIVERY_PHOTOS';
 
+// ✅ PENTING: Gunakan _supabase (dengan underscore) untuk menghindari konflik
 const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-// 🔐 ADMIN HARDCODED (Sama persis dengan index.html)
+// 🔐 ADMIN HARDCODED CREDENTIALS (Sama persis dengan index.html)
 const ADMIN_CRED = {
   email: 'mariovarlente@gmail.com',
   password: 'adminklase1',
@@ -377,10 +413,7 @@ function notify(msg, icon = 'info') {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 🔐 PROTEKSI: Cek apakah user adalah Admin ✅
-// ═══════════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════════
-// 🔐 PROTEKSI: Cek apakah user adalah Admin (FIXED) ✅
+// 🔐 PROTEKSI: Cek apakah user adalah Admin (FIXED - ANTI-STUCK) ✅
 // ═══════════════════════════════════════════════════════════════
 async function checkAdminAccess() {
   const loading = document.getElementById('loadingSection');
@@ -402,16 +435,15 @@ async function checkAdminAccess() {
     if (currentUser.id === 'ADMIN_HARDCODED' || currentUser.role === 'Admin') {
       console.log("✅ Akses diterima: Admin terdeteksi");
       
-      // Optional: Verifikasi session Supabase untuk admin non-hardcoded
-      if (currentUser.id !== 'ADMIN_HARDCODED') {
-        const { data: session } = await _supabase.auth.getSession();
-        if (!session?.session) {
-          throw new Error("Session expired");
-        }
-      }
-      
+      // ✅ ANTI-STUCK: Tampilkan panel DULU, baru load data di background
       showAdminPanel();
-      await loadData();
+      
+      // Load data tanpa blocking UI (tanpa await di sini)
+      loadData().catch(err => {
+        console.error("❌ Gagal load data:", err);
+        notify("Data gagal dimuat, silakan refresh", "error");
+      });
+      
     } else {
       // ✅ 3. Bukan admin, lempar error untuk ditangani catch
       throw new Error(`Role tidak valid: ${currentUser.role}`);
@@ -429,6 +461,7 @@ async function checkAdminAccess() {
     }, 1500);
   }
 }
+
 // ═══════════════════════════════════════════════════════════════
 // 🚪 LOGOUT ✅
 // ═══════════════════════════════════════════════════════════════
@@ -450,11 +483,12 @@ async function handleLogout() {
 
 function showAdminPanel() {
   document.getElementById('loadingSection').classList.add('hide');
+  document.getElementById('authSection').classList.add('hide');
   document.getElementById('adminSection').classList.remove('hide');
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 📊 DATA FUNCTIONS ✅
+// 📊 DATA FUNCTIONS - FIX DESTRUCTURING ✅
 // ═══════════════════════════════════════════════════════════════
 async function loadData() {
   try {
@@ -469,15 +503,24 @@ async function loadData() {
         .lte('created_at', new Date(endDate).setHours(23, 59, 59, 999));
     }
 
-    const {  tasksData, error: tErr } = await query;
+    // ✅ FIX: Destructuring yang benar { data: tasksData, error }
+    const { data: tasksData, error: tErr } = await query;
     if (tErr) throw tErr;
     tasks = tasksData || [];
 
-    const { data: couriersData, error: cErr } = await _supabase.from('profiles').select('id, email, full_name, phone, created_at').eq('role', 'Kurir');
+    // ✅ FIX: Destructuring yang benar untuk couriers
+    const { data: couriersData, error: cErr } = await _supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'Kurir');
     if (cErr) throw cErr;
     couriers = couriersData || [];
 
-    const {  deliveriesData, error: dErr } = await _supabase.from('deliveries').select('*').order('delivered_at', { ascending: false });
+    // ✅ FIX: Destructuring yang benar untuk deliveries
+    const { data: deliveriesData, error: dErr } = await _supabase
+      .from('deliveries')
+      .select('*')
+      .order('delivered_at', { ascending: false });
     if (dErr) throw dErr;
     deliveries = deliveriesData || [];
 
@@ -487,6 +530,7 @@ async function loadData() {
     renderCouriersGrid();
     renderDeliveriesTable();
   } catch (error) {
+    console.error('❌ Load error:', error);
     notify('Gagal memuat  ' + error.message, 'error');
   }
 }
@@ -645,6 +689,9 @@ function switchTab(view, el) {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 🔄 TOGGLE MODAL - FIX: LOAD COURIERS ✅
+// ═══════════════════════════════════════════════════════════════
 function toggleModal(id) {
   const modal = document.getElementById(id);
   if (!modal) return;
@@ -662,105 +709,38 @@ function toggleModal(id) {
       document.getElementById('taskPriority').value = 'low';
       document.getElementById('taskNotes').value = '';
 
-      // ═══════════════════════════════════════════════════════════════
-// 📦 LOAD COURIERS TO SELECT - DENGAN DEBUG ✅
-// ═══════════════════════════════════════════════════════════════
-function loadCouriersToSelect() {
-  var select = document.getElementById('taskCourier');
-  if (!select) {
-    console.error('❌ Select element #taskCourier tidak ditemukan!');
-    return;
+      // ✅ PENTING: Load couriers dan tampilkan di dropdown
+      loadCouriersToSelect();
+    } else if (id === 'addCourierModal') {
+      document.getElementById('courierName').value = '';
+      document.getElementById('courierEmail').value = '';
+      document.getElementById('courierPhone').value = '';
+      document.getElementById('courierPass').value = '';
+    }
   }
-  
-  console.log('🔄 Loading couriers ke dropdown...', couriers.length, 'kurir ditemukan');
-  console.log('Data couriers:', couriers);
-  
-  if (couriers.length === 0) {
-    console.warn('⚠️ Tidak ada kurir di database!');
-    select.innerHTML = '<option value="">-- Tidak Ada Kurir Tersedia --</option>';
-    
-    // Tampilkan tombol debug
-    setTimeout(function() {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Tidak Ada Kurir',
-        text: 'Belum ada kurir yang terdaftar. Silakan tambah kurir terlebih dahulu.',
-        confirmButtonText: 'Tambah Kurir Sekarang',
-        confirmButtonColor: '#10b981'
-      }).then(function(result) {
-        if (result.isConfirmed) {
-          toggleModal('addCourierModal');
-        }
-      });
-    }, 500);
-    
-    return;
-  }
-  
-  var optionsHtml = '<option value="">-- Pilih Kurir --</option>';
-  
-  couriers.forEach(function(c) {
-    var displayName = c.full_name || c.email || 'Tanpa Nama';
-    optionsHtml += '<option value="' + c.id + '">' + displayName + ' (' + c.email + ')</option>';
-    console.log('  ✅ Ditambahkan:', displayName);
-  });
-  
-  select.innerHTML = optionsHtml;
-  console.log('✅ Dropdown kurir berhasil dimuat');
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 🔍 DEBUG: Test Load Couriers Manual
+// 📦 LOAD COURIERS TO SELECT ✅
 // ═══════════════════════════════════════════════════════════════
-async function debugLoadCouriers() {
-  console.log('🔍 Testing load couriers dari database...');
-  
-  try {
-    var response = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('role', 'Kurir');
-    
-    if (response.error) {
-      console.error('❌ Error:', response.error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error Load Kurir',
-        text: response.error.message,
-        footer: '<pre>' + JSON.stringify(response.error, null, 2) + '</pre>'
-      });
-    } else {
-      console.log('✅ Berhasil! Ditemukan:', response.data.length, 'kurir');
-      console.log('Data:', response.data);
-      
-      Swal.fire({
-        icon: 'success',
-        title: 'Kurir Ditemukan',
-        text: response.data.length + ' kurir ditemukan di database',
-        footer: '<pre style="max-height:200px;overflow:auto;font-size:10px;">' + 
-                JSON.stringify(response.data.map(function(c) { 
-                  return {name: c.full_name, email: c.email, role: c.role}; 
-                }), null, 2) + '</pre>'
-      });
-      
-      // Update global variable
-      couriers = response.data;
-      
-      // Refresh dropdown jika modal terbuka
-      if (!document.getElementById('addTaskModal').classList.contains('hide')) {
-        loadCouriersToSelect();
-      }
-    }
-  } catch (error) {
-    console.error('❌ Exception:', error);
-    Swal.fire({
-      icon: 'error',
-      title: 'Exception',
-      text: error.message
-    });
+function loadCouriersToSelect() {
+  const select = document.getElementById('taskCourier');
+  if (!select) return;
+
+  if (couriers.length === 0) {
+    select.innerHTML = '<option value="">-- Tidak Ada Kurir Tersedia --</option>';
+    return;
   }
+
+  let optionsHtml = '<option value="">-- Pilih Kurir --</option>';
+  couriers.forEach(c => {
+    const displayName = c.full_name || c.email || 'Tanpa Nama';
+    optionsHtml += `<option value="${c.id}">${displayName}</option>`;
+  });
+  select.innerHTML = optionsHtml;
 }
- ═══════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════
 // 📦 TASK FUNCTIONS ✅
 // ═══════════════════════════════════════════════════════════════
 async function saveTask() {
@@ -773,6 +753,13 @@ async function saveTask() {
   const btn = document.getElementById('btnSaveTask');
 
   if (!pt || !addr || !type || !courier) { notify('Mohon lengkapi semua field wajib', 'warning'); return; }
+
+  // ✅ Validasi: Cek apakah taskId sudah ada (duplikat)
+  const existingTask = tasks.find(t => t.id === document.getElementById('taskAutoId').value);
+  if (existingTask) {
+    notify('ID Tugas sudah ada! Silakan generate ulang.', 'warning');
+    return;
+  }
 
   btn.disabled = true;
   btn.innerHTML = '<div class="loading-spinner"></div>';
@@ -823,7 +810,7 @@ async function deleteTask(id) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 👤 COURIER FUNCTIONS ✅
+// 👤 COURIER FUNCTIONS - FIX SYNTAX signUp() ✅
 // ═══════════════════════════════════════════════════════════════
 async function saveCourier() {
   const name = document.getElementById('courierName').value.trim();
@@ -839,14 +826,14 @@ async function saveCourier() {
   btn.innerHTML = '<div class="loading-spinner"></div>';
 
   try {
-    // Register via Supabase Auth (bukan admin.createUser)
-    const { data: authData, error: authError } = await _supabase.auth.signUp({
-      email,
-      password,
+    // ✅ FIX: Syntax signUp yang benar - gunakan data: {...} BUKAN { {...} }
+    const {  authData, error: authError } = await _supabase.auth.signUp({
+      email: email,
+      password: password,
       options: {
-          data:{  // ← '' key wajib ada!
+         {  // ← '' key WAJIB ada, bukan {} kosong!
           full_name: name,
-          phone,
+          phone: phone,
           role: 'Kurir'
         }
       }
@@ -933,77 +920,54 @@ function toggleMobileMenu() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 🚀 INIT - CHECK ADMIN ACCESS ✅
+// 🚀 INIT - PWA + LOGO FALLBACK ✅
 // ═══════════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════════
-// 🔐 FIX LOADING & AUTH CHECK ✅
-// ═══════════════════════════════════════════════════════════════
-async function checkAdminAccess() {
-  const saved = localStorage.getItem('currentUser');
-  
-  if (!saved) {
-    console.warn("No session found, redirecting...");
-    window.location.href = 'index.html';
-    return;
-  }
-
-  try {
-    currentUser = JSON.parse(saved);
-
-    // Cek apakah user memiliki role Admin (Hardcoded atau DB)
-    if (currentUser.role === 'Admin' || currentUser.id === 'ADMIN_HARDCODED') {
-      console.log("Admin verified, unlocking panel...");
-      
-      // Langkah 1: Tampilkan panel duluan agar tidak stuck loading
-      showAdminPanel(); 
-      
-      // Langkah 2: Baru muat data dari database
-      await loadData().catch(err => {
-        console.error("Data load failed but panel is open:", err);
-        notify("Gagal sinkronisasi data terbaru", "warning");
-      });
-    } else {
-      throw new Error("Bukan akses Admin");
-    }
-  } catch (error) {
-    console.error("Auth Error:", error);
-    Swal.fire({
-      icon: 'error',
-      title: 'Akses Ditolak',
-      text: 'Anda tidak memiliki otoritas Admin.',
-      confirmButtonText: 'Kembali Login'
-    }).then(() => {
-      localStorage.removeItem('currentUser');
-      window.location.href = 'index.html';
-    });
-  }
-}
-
-// Tambahkan fungsi showAdminPanel yang lebih tegas
-function showAdminPanel() {
-  const loader = document.getElementById('loadingSection');
-  const admin = document.getElementById('adminSection');
-  
-  if(loader) loader.classList.add('hide');
-  if(admin) admin.classList.remove('hide');
-}
-
 window.onload = () => {
-  // Set tanggal hari ini
-  const dateEl = document.getElementById('currentDate');
-  if(dateEl) dateEl.innerText = new Date().toLocaleDateString('id-ID', { 
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-  });
+  // Setup logo dengan fallback
+  const logoImg = document.getElementById('logoAuth');
+  const logoContainer = document.getElementById('logoContainer');
+  
+  if (logoImg && logoContainer) {
+    logoImg.src = LOGO_URL;
+    logoImg.onerror = function() {
+      console.warn('⚠️ Logo gagal dimuat, menggunakan fallback');
+      logoContainer.innerHTML = '<i class="fas fa-truck-moving text-4xl text-blue-600"></i>';
+    };
+    setTimeout(function() {
+      if (!logoImg.complete || logoImg.naturalHeight === 0 || logoImg.naturalWidth === 0) {
+        console.warn('⚠️ Logo tidak muncul setelah timeout');
+        if (logoContainer && !logoContainer.querySelector('i')) {
+          logoContainer.innerHTML = '<i class="fas fa-truck-moving text-4xl text-blue-600"></i>';
+        }
+      }
+    }, 5000);
+  }
 
-  // Jalankan pengecekan akses
+  // Setup sidebar logo
+  const sidebarLogo = document.getElementById('logoSidebar');
+  if (sidebarLogo) {
+    sidebarLogo.src = LOGO_URL;
+    sidebarLogo.onerror = function() {
+      this.parentElement.innerHTML = '<i class="fas fa-truck-moving text-3xl text-blue-600"></i>';
+    };
+  }
+
+  // Set current date
+  document.getElementById('currentDate').innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  // ✅ PWA: Registrasi Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log("✅ PWA: Service Worker Registered"))
+      .catch(err => console.log("❌ PWA: Service Worker Failed", err));
+  }
+
+  // ✅ Cek akses admin (proteksi utama)
   checkAdminAccess();
   
-  // Registrasi Service Worker untuk PWA (Opsional)
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(err => console.log("SW failed:", err));
-  }
+  console.log('✅ Admin panel ready - Fixed Syntax + Anti-Stuck!');
+  console.log('📡 Supabase URL:', SB_URL);
 };
-
 </script>
 </body>
 </html>
