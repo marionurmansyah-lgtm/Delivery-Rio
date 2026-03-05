@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>PT Klase Auto Rental - Delivery App</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1e3a8a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
 <!-- ✅ CDN TANPA SPASI EKSTRA -->
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -11,6 +16,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- ✅ LIBRARY KOMPRESI GAMBAR -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/browser-image-compression/2.0.2/browser-image-compression.min.js"></script>
 <style>
 .hide { display: none !important; }
 .fade-in { animation: fadeIn 0.3s ease-in-out; }
@@ -214,7 +221,7 @@ const BUCKET_NAME = 'DELIVERY_PHOTOS';
 // ✅ PENTING: Gunakan _supabase (dengan underscore) untuk menghindari konflik
 const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-// 🔐 ADMIN HARDCODED CREDENTIALS (Hanya untuk admin)
+// 🔐 ADMIN HARDCODED CREDENTIALS
 const ADMIN_CRED = {
   email: 'mariovarlente@gmail.com',
   password: 'adminklase1',
@@ -281,7 +288,7 @@ async function handleLogin() {
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
       notify('Berhasil Masuk sebagai Admin!', 'success');
       setTimeout(() => {
-        window.location.href = 'admin.html'; // Redirect ke admin panel
+        window.location.href = 'admin.html';
       }, 1000);
       return;
     }
@@ -349,7 +356,7 @@ async function handleRegister() {
           data:{  // ← '' key wajib ada!
           full_name: name,
           phone: phone,
-          role: 'Kurir'  // Default role untuk register
+          role: 'Kurir'
         }
       }
     });
@@ -394,12 +401,12 @@ function showKurirDashboard() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 📊 DATA FUNCTIONS ✅
+// 📊 DATA FUNCTIONS - FIX DESTRUCTURING ✅
 // ═══════════════════════════════════════════════════════════════
 async function loadData() {
   try {
-    // Load tasks aktif untuk kurir
-    const {  activeTasks, error: tErr } = await _supabase
+    // ✅ FIX: Gunakan destructuring { data, error }
+    const { data: activeTasks, error: tErr } = await _supabase
       .from('tasks')
       .select('*')
       .neq('status', 'Selesai')
@@ -409,8 +416,7 @@ async function loadData() {
     if (tErr) throw tErr;
     tasks = activeTasks || [];
 
-    // Load deliveries milik kurir ini
-    const {  myDeliveries, error: dErr } = await _supabase
+    const { data: myDeliveries, error: dErr } = await _supabase
       .from('deliveries')
       .select('*')
       .eq('courier_id', currentUser.id)
@@ -562,33 +568,55 @@ function getLocation() {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 📦 SUBMIT DELIVERY - DENGAN KOMPRESI GAMBAR ✅
+// ═══════════════════════════════════════════════════════════════
 async function submitDelivery() {
   const recipient = document.getElementById('delRecipient').value.trim();
   const taskId = document.getElementById('modalTaskId').value;
   const btn = document.getElementById('btnSubmit');
+  const fileInput = document.getElementById('delPhoto');
 
   if (!recipient) { notify('Nama penerima wajib diisi!', 'warning'); return; }
+  if (!fileInput.files[0]) { notify('Foto bukti wajib diunggah!', 'warning'); return; }
 
   btn.disabled = true;
-  btn.innerHTML = '<div class="loading-spinner"></div> Mengirim...';
+  btn.innerHTML = '<div class="loading-spinner"></div> Mengompres & Mengirim...';
 
   try {
-    let photoUrl = '';
-    const file = document.getElementById('delPhoto').files[0];
+    let file = fileInput.files[0];
 
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) throw new Error('Ukuran foto maksimal 5MB');
-      
-      const ext = file.name.split('.').pop().toLowerCase();
-      const fileName = `deliveries/${taskId}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
-      
-      const { error: uploadError } = await _supabase.storage.from(BUCKET_NAME).upload(fileName, file, { upsert: true });
-      if (uploadError) throw uploadError;
-      
-      const { data: urlData } = _supabase.storage.from(BUCKET_NAME).getPublicUrl(fileName);
-      photoUrl = urlData.publicUrl;
+    // --- LOGIKA KOMPRESI GAMBAR ---
+    const options = {
+      maxSizeMB: 1,           // Ukuran maksimal 1MB
+      maxWidthOrHeight: 1280, // Resolusi maksimal (HD)
+      useWebWorker: true
+    };
+    
+    try {
+      const compressedFile = await imageCompression(file, options);
+      file = compressedFile; // Gunakan file yang sudah kecil
+      console.log('✅ Foto dikompres:', (file.size / 1024).toFixed(1), 'KB');
+    } catch (error) {
+      console.warn('⚠️ Kompresi gagal, mengirim file asli...', error);
     }
+    // ------------------------------
 
+    const ext = file.name.split('.').pop().toLowerCase();
+    const fileName = `deliveries/${taskId}_${Date.now()}.${ext}`;
+
+    // Upload ke Supabase Storage
+    const {  uploadData, error: uploadError } = await _supabase.storage
+      .from(BUCKET_NAME)
+      .upload(fileName, file, { upsert: true });
+
+    if (uploadError) throw uploadError;
+
+    // Ambil URL Publik
+    const {  urlData } = _supabase.storage.from(BUCKET_NAME).getPublicUrl(fileName);
+    const photoUrl = urlData.publicUrl;
+
+    // Ambil Koordinat
     let lat = null, long = null;
     const locationValue = document.getElementById('delLocation').value;
     if (locationValue.includes(',') && !locationValue.includes('Klik')) {
@@ -596,7 +624,8 @@ async function submitDelivery() {
       if (!isNaN(parts[0]) && !isNaN(parts[1])) { lat = parts[0]; long = parts[1]; }
     }
 
-    await _supabase.from('deliveries').insert({
+    // Simpan Data ke Tabel Deliveries
+    const { error: insertError } = await _supabase.from('deliveries').insert({
       task_id: taskId,
       courier_id: currentUser.id,
       recipient_name: recipient,
@@ -608,20 +637,26 @@ async function submitDelivery() {
       delivered_at: new Date().toISOString()
     });
 
+    if (insertError) throw insertError;
+
+    // Update Status Task
     await _supabase.from('tasks').update({ status: 'Selesai' }).eq('id', taskId);
-    
+
     closeModal('deliveryModal');
+    notify('Laporan berhasil terkirim!', 'success');
     await loadData();
-    notify('Laporan terkirim!', 'success');
 
   } catch (error) {
-    notify(error.message, 'error');
+    notify('Gagal: ' + error.message, 'error');
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Kirim Laporan';
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 🖼️ SHOW PHOTO DETAIL - FIX MAPS LINK ✅
+// ═══════════════════════════════════════════════════════════════
 function showPhotoDetail(deliveryId) {
   const delivery = deliveries.find(d => d.id === deliveryId);
   if (!delivery) return;
@@ -637,6 +672,7 @@ function showPhotoDetail(deliveryId) {
 
   const mapLink = document.getElementById('infoMapLink');
   if (delivery.location_lat && delivery.location_long) {
+    // ✅ FIX: String template Google Maps yang benar
     mapLink.href = `https://www.google.com/maps?q=${delivery.location_lat},${delivery.location_long}`;
     mapLink.classList.remove('hide');
   } else {
@@ -751,7 +787,7 @@ async function checkSession() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 🚀 INIT - SINGLE LOGIN PATTERN ✅
+// 🚀 INIT - PWA + LOGO FALLBACK ✅
 // ═══════════════════════════════════════════════════════════════
 window.onload = () => {
   // Setup logo dengan fallback
@@ -772,6 +808,13 @@ window.onload = () => {
         }
       }
     }, 5000);
+  }
+  
+  // ✅ PWA: Registrasi Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log("✅ PWA: Service Worker Registered"))
+      .catch(err => console.log("❌ PWA: Service Worker Failed", err));
   }
   
   checkSession();
