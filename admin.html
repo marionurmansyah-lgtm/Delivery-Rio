@@ -504,12 +504,12 @@ async function loadData() {
     }
 
     // ✅ FIX: Destructuring yang benar { data: tasksData, error }
-    const { data: tasksData, error: tErr } = await query;
+    const {  tasksData, error: tErr } = await query;
     if (tErr) throw tErr;
     tasks = tasksData || [];
 
     // ✅ FIX: Destructuring yang benar untuk couriers
-    const { data: couriersData, error: cErr } = await _supabase
+    const {  couriersData, error: cErr } = await _supabase
       .from('profiles')
       .select('*')
       .eq('role', 'Kurir');
