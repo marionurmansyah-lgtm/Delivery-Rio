@@ -379,42 +379,56 @@ function notify(msg, icon = 'info') {
 // ═══════════════════════════════════════════════════════════════
 // 🔐 PROTEKSI: Cek apakah user adalah Admin ✅
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// 🔐 PROTEKSI: Cek apakah user adalah Admin (FIXED) ✅
+// ═══════════════════════════════════════════════════════════════
 async function checkAdminAccess() {
+  const loading = document.getElementById('loadingSection');
+  const admin = document.getElementById('adminSection');
   const saved = localStorage.getItem('currentUser');
-  
+
+  // ✅ 1. Jika tidak ada session, langsung redirect
   if (!saved) {
-    // Tidak ada session, redirect ke index.html (login gate)
+    console.log("🚫 Akses ditolak: Tidak ada session di localStorage");
     window.location.href = 'index.html';
     return;
   }
-  
-  currentUser = JSON.parse(saved);
-  
-  // ✅ Cek 1: Jika admin hardcoded
-  if (currentUser.id === 'ADMIN_HARDCODED' && currentUser.role === 'Admin') {
-    showAdminPanel();
-    await loadData();
-    return;
-  }
-  
-  // ✅ Cek 2: Jika login via Supabase tapi role Admin
-  if (currentUser.role === 'Admin') {
-    const { data } = await _supabase.auth.getSession();
-    if (data?.session) {
+
+  try {
+    currentUser = JSON.parse(saved);
+    console.log("🔍 Memverifikasi user:", currentUser);
+
+    // ✅ 2. Cek Admin Hardcoded ATAU Admin via Supabase
+    if (currentUser.id === 'ADMIN_HARDCODED' || currentUser.role === 'Admin') {
+      console.log("✅ Akses diterima: Admin terdeteksi");
+      
+      // Optional: Verifikasi session Supabase untuk admin non-hardcoded
+      if (currentUser.id !== 'ADMIN_HARDCODED') {
+        const { data: session } = await _supabase.auth.getSession();
+        if (!session?.session) {
+          throw new Error("Session expired");
+        }
+      }
+      
       showAdminPanel();
       await loadData();
-      return;
+    } else {
+      // ✅ 3. Bukan admin, lempar error untuk ditangani catch
+      throw new Error(`Role tidak valid: ${currentUser.role}`);
     }
+    
+  } catch (error) {
+    // ✅ 4. Error handling: clear storage + redirect + notify
+    console.error("❌ Auth Error:", error.message);
+    notify('Akses ditolak! Silakan login ulang.', 'error');
+    localStorage.removeItem('currentUser');
+    
+    // Redirect dengan delay agar user lihat notifikasi
+    setTimeout(() => { 
+      window.location.href = 'index.html'; 
+    }, 1500);
   }
-  
-  // ❌ Bukan admin, redirect ke index.html
-  notify('Akses ditolak. Hanya Admin yang dapat mengakses halaman ini.', 'error');
-  localStorage.removeItem('currentUser');
-  setTimeout(() => {
-    window.location.href = 'index.html';
-  }, 1500);
 }
-
 // ═══════════════════════════════════════════════════════════════
 // 🚪 LOGOUT ✅
 // ═══════════════════════════════════════════════════════════════
@@ -921,15 +935,75 @@ function toggleMobileMenu() {
 // ═══════════════════════════════════════════════════════════════
 // 🚀 INIT - CHECK ADMIN ACCESS ✅
 // ═══════════════════════════════════════════════════════════════
-window.onload = () => {
-  // Set current date
-  document.getElementById('currentDate').innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+// ═══════════════════════════════════════════════════════════════
+// 🔐 FIX LOADING & AUTH CHECK ✅
+// ═══════════════════════════════════════════════════════════════
+async function checkAdminAccess() {
+  const saved = localStorage.getItem('currentUser');
+  
+  if (!saved) {
+    console.warn("No session found, redirecting...");
+    window.location.href = 'index.html';
+    return;
+  }
 
-  // ✅ Cek akses admin (proteksi utama)
+  try {
+    currentUser = JSON.parse(saved);
+
+    // Cek apakah user memiliki role Admin (Hardcoded atau DB)
+    if (currentUser.role === 'Admin' || currentUser.id === 'ADMIN_HARDCODED') {
+      console.log("Admin verified, unlocking panel...");
+      
+      // Langkah 1: Tampilkan panel duluan agar tidak stuck loading
+      showAdminPanel(); 
+      
+      // Langkah 2: Baru muat data dari database
+      await loadData().catch(err => {
+        console.error("Data load failed but panel is open:", err);
+        notify("Gagal sinkronisasi data terbaru", "warning");
+      });
+    } else {
+      throw new Error("Bukan akses Admin");
+    }
+  } catch (error) {
+    console.error("Auth Error:", error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Akses Ditolak',
+      text: 'Anda tidak memiliki otoritas Admin.',
+      confirmButtonText: 'Kembali Login'
+    }).then(() => {
+      localStorage.removeItem('currentUser');
+      window.location.href = 'index.html';
+    });
+  }
+}
+
+// Tambahkan fungsi showAdminPanel yang lebih tegas
+function showAdminPanel() {
+  const loader = document.getElementById('loadingSection');
+  const admin = document.getElementById('adminSection');
+  
+  if(loader) loader.classList.add('hide');
+  if(admin) admin.classList.remove('hide');
+}
+
+window.onload = () => {
+  // Set tanggal hari ini
+  const dateEl = document.getElementById('currentDate');
+  if(dateEl) dateEl.innerText = new Date().toLocaleDateString('id-ID', { 
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+  });
+
+  // Jalankan pengecekan akses
   checkAdminAccess();
   
-  console.log('✅ Admin panel loaded - Protected by Single Login Pattern');
+  // Registrasi Service Worker untuk PWA (Opsional)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(err => console.log("SW failed:", err));
+  }
 };
+
 </script>
 </body>
 </html>
